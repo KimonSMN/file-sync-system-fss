@@ -1,1 +1,2 @@
 /home/kimon/hw1-KimonSMN/test/docs /home/kimon/hw1-KimonSMN/test/backup
+/home/kimon/hw1-KimonSMN/test/help /home/kimon/hw1-KimonSMN/test/helpbackup

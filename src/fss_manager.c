@@ -21,6 +21,18 @@ int create_named_pipe(char *name){
     return 0;
 }
 
+int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
+    struct stat st;
+    if(stat(path, &st) != 0) {
+        fprintf(stderr,"Directory %s doesn't exist.\n", path);
+        return 1;
+    } else {
+        fprintf(stdout,"All good with %s.\n", path);
+        return 0;
+    }
+}
+
+
 int main(int argc, char* argv[]){
 
     // Flags
@@ -39,7 +51,6 @@ int main(int argc, char* argv[]){
     create_named_pipe("fss_out");
 
     // Read config file
-
     FILE *fp = fopen("./config.txt", "r");
     if (!fp) {
         perror("Failed to open file");
@@ -47,8 +58,8 @@ int main(int argc, char* argv[]){
     }
 
     char line[1024], source_dir[512], target_dir[512];
-
-    if(fgets(line, sizeof(line), fp)) {
+    
+    while(fgets(line, sizeof(line), fp)) {
         line[strcspn(line, "\n")] = 0;
 
         char *token = strtok(line, " ");
@@ -63,28 +74,23 @@ int main(int argc, char* argv[]){
                 perror("Problem in Config file");
             }
         }
+        check_dir(source_dir);
+        check_dir(target_dir);
+        // HAVE TO ADD SYNC_INFO_MEM_STORE
     }
-    printf("%s ",source_dir);
-    printf("%s\n",target_dir);
 
-    fclose(fp);
+    fclose(fp); // Close config file
 
-    if(mkfifo("fss_out", 0777) == -1 ){ // This file read from or wrote to by everyone
-        if (errno != EEXIST){
-            printf("Could not create fifo file\n");
-            return 1;
-        }
-    }
-    printf("Opening...\n");
-    int fd = open("fss_in", O_WRONLY);
-    printf("Open\n");
-    int x = 97;
-    if(write(fd, &x, sizeof(int)) == -1){
-        return 2;
-    }
-    printf("Written\n");
-    close(fd);
-    printf("Closed\n");
+    // printf("Opening...\n");
+    // int fd = open("fss_in", O_WRONLY);
+    // printf("Open\n");
+    // int x = 97;
+    // if(write(fd, &x, sizeof(int)) == -1){
+    //     return 2;
+    // }
+    // printf("Written\n");
+    // close(fd);
+    // printf("Closed\n");
     return 0;
 
 }
