@@ -111,16 +111,17 @@ int main(int argc, char* argv[]){
     hashTable* table = init_hash_table();
 
     watchDir* dir1 = malloc(sizeof(watchDir));
-    dir1->source_dir = strdup("./test/docs");
-    dir1->target_dir = strdup("./test/backup");
+    dir1->source_dir = strdup("./dummy/docs");
+    dir1->target_dir = strdup("./dummy/backup");
     dir1->last_sync_time = 0;
     dir1->active = 1;
     dir1->error_count = 0;
     dir1->next = NULL;
     insert_watchDir(table, dir1);
-    
+
     print_hash_table(table);
 
+    destroy_hash_table(table);
     // printf("Opening...\n");
     // int fd = open("fss_in", O_WRONLY);
     // printf("Open\n");

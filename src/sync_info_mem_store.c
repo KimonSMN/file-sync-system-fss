@@ -42,7 +42,7 @@ void insert_watchDir(hashTable* table, watchDir* dir){
 }
 
 watchDir* find_watchDir(hashTable* table, const char* source_dir){
-    return 0;
+
 }
 
 int remove_watchDir(hashTable* table, const char* source_dir){
