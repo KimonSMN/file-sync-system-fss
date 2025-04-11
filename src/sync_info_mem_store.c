@@ -67,5 +67,20 @@ void print_hash_table(hashTable* table){
 }
 
 void destroy_hash_table(hashTable* table){
+    if (table == NULL) {
+        return;
+    }
 
+    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+        watchDir* curr = table->buckets[i];
+        while (curr) {
+            watchDir* temp = curr;
+            curr = curr->next;
+
+            free(temp->source_dir);
+            free(temp->target_dir);
+            free(temp);
+        }
+    }
+    free(table);
 }
