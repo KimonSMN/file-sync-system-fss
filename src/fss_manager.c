@@ -6,6 +6,8 @@
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
@@ -80,6 +82,28 @@ int main(int argc, char* argv[]){
     }
 
     fclose(fp); // Close config file
+    printf("PROGRAM PID: %d\n",getpid());
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        // Child process
+        char *args[] = {"./build/worker", "arg1", "arg2", NULL};
+        execvp(args[0], args);
+        printf("WORKER PID SHOULD BE: %d\n",getpid());
+
+        // If exec fails
+        perror("execvp failed");
+    } else if (pid > 0) {
+        // Parent process
+
+        wait(NULL); // Wait for child to finish
+        
+        printf("Child process finished\n");
+    } else {
+        perror("fork failed");
+    }
+    printf("PROGRAM PID: %d\n",getpid());
 
     // printf("Opening...\n");
     // int fd = open("fss_in", O_WRONLY);
