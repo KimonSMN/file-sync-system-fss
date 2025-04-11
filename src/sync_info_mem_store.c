@@ -43,6 +43,21 @@ void insert_watchDir(hashTable* table, watchDir* dir){
 
 watchDir* find_watchDir(hashTable* table, const char* source_dir){
 
+    if (table == NULL || source_dir == NULL) {
+        return NULL;
+    }
+
+    int index = hash(source_dir);
+
+    watchDir* found = table->buckets[index];
+    while (found) {
+        if(strcmp(found->source_dir, source_dir) == 0) {
+            return found;
+        }
+        found = found->next;
+    }
+
+    return NULL;
 }
 
 int remove_watchDir(hashTable* table, const char* source_dir){
