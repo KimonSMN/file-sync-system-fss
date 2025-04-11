@@ -11,6 +11,7 @@ BUILD_DIR = build
 MANAGER_SRC = $(SRC_DIR)/fss_manager.c
 CONSOLE_SRC = $(SRC_DIR)/fss_console.c
 WORKER_SRC  = $(SRC_DIR)/worker.c
+COMMON_SRC  = $(SRC_DIR)/sync_info_mem_store.c
 
 # Output binaries
 MANAGER_BIN = $(BUILD_DIR)/fss_manager
@@ -21,15 +22,15 @@ WORKER_BIN  = $(BUILD_DIR)/worker
 all: $(MANAGER_BIN) $(CONSOLE_BIN) $(WORKER_BIN)
 
 # Build manager
-$(MANAGER_BIN): $(MANAGER_SRC)
+$(MANAGER_BIN): $(MANAGER_SRC) $(COMMON_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 # Build console
-$(CONSOLE_BIN): $(CONSOLE_SRC)
+$(CONSOLE_BIN): $(CONSOLE_SRC) $(COMMON_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 # Build worker
-$(WORKER_BIN): $(WORKER_SRC)
+$(WORKER_BIN): $(WORKER_SRC) $(COMMON_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 # Clean up

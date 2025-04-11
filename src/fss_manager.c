@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include "sync_info_mem_store.h"
 
 int create_named_pipe(char *name){
     if(mkfifo(name, 0777) == -1){
@@ -104,6 +105,21 @@ int main(int argc, char* argv[]){
         perror("fork failed");
     }
     printf("PROGRAM PID: %d\n",getpid());
+
+    // TEST HASH TABLE
+
+    hashTable* table = init_hash_table();
+
+    watchDir* dir1 = malloc(sizeof(watchDir));
+    dir1->source_dir = strdup("./test/docs");
+    dir1->target_dir = strdup("./test/backup");
+    dir1->last_sync_time = 0;
+    dir1->active = 1;
+    dir1->error_count = 0;
+    dir1->next = NULL;
+    insert_watchDir(table, dir1);
+    
+    print_hash_table(table);
 
     // printf("Opening...\n");
     // int fd = open("fss_in", O_WRONLY);

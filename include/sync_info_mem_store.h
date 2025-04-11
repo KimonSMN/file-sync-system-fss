@@ -2,6 +2,7 @@
 #define SYNC_INFO_MEM_STORE
 
 #include <time.h>
+#include <stdlib.h>
 
 #define HASH_TABLE_SIZE 1572869
  
