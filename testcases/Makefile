@@ -5,7 +5,7 @@ INCLUDES = -I../include
 
 # Paths
 SRC_DIR = ../src
-BUILD_DIR = ../build
+BUILD_DIR = ../testcases
 
 # Source files
 TEST_SRC = test_sync_info.c

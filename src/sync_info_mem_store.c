@@ -61,7 +61,25 @@ watchDir* find_watchDir(hashTable* table, const char* source_dir){
 }
 
 int remove_watchDir(hashTable* table, const char* source_dir){
-    return 0;
+    watchDir* to_remove = table->buckets[hash(source_dir)];
+    watchDir* prev = NULL;
+
+    while (to_remove) {
+        if (strcmp(to_remove->source_dir, source_dir) == 0){
+            if(prev) {
+                prev->next = to_remove->next;
+            } else {
+                table->buckets[hash(source_dir)] = to_remove->next;
+            }
+            free(to_remove->source_dir);
+            free(to_remove->target_dir);
+            free(to_remove);
+            return 0;  // Success
+        }
+        prev = to_remove;
+        to_remove = to_remove->next;
+    }
+    return 1;
 }
 
 void print_hash_table(hashTable* table){
