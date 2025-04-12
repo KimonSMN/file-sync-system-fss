@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]){
-    printf("HELLO I AM WORKER WITH PID: %d AND I RUN\n", getpid());
+    printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
+
     return 0;
 }

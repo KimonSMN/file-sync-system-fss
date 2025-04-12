@@ -39,10 +39,10 @@ int create_named_pipe(char *name){
 int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
     struct stat st;
     if(stat(path, &st) != 0) {
-        fprintf(stderr,"Directory %s doesn't exist.\n", path);
+        // fprintf(stderr,"Directory %s doesn't exist.\n", path);
         return 1;
     } else {
-        fprintf(stdout,"All good with %s.\n", path);
+        // fprintf(stdout,"All good with %s.\n", path);
         return 0;
     }
 }
@@ -100,34 +100,39 @@ int main(int argc, char* argv[]){
                 perror("Problem in Config file");
             }
         }
+        // Inserts Valid Directories to hashtable
         if (check_dir(source_dir) == 0 && check_dir(target_dir) == 0) {
             watchDir* curr = create_dir(source_dir, target_dir);
             insert_watchDir(table, curr);
+        
+            
+            pid_t pid = fork();
+
+            if (pid == 0) {
+                // Child process
+                char *args[] = {"./build/worker", source_dir, target_dir, NULL};
+                execvp(args[0], args);
+        
+                // If exec fails
+                perror("execvp failed");
+            } else if (pid > 0) {
+                // Parent process
+        
+                wait(NULL); // Wait for child to finish
+                
+                printf("Child process finished\n");
+            } else {
+                perror("fork failed");
+            }
+
         }
     }
 
-    print_hash_table(table);
+    // print_hash_table(table);
 
     fclose(fp); // Close config file
 
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        // Child process
-        char *args[] = {"./build/worker", "arg1", "arg2", NULL};
-        execvp(args[0], args);
-
-        // If exec fails
-        perror("execvp failed");
-    } else if (pid > 0) {
-        // Parent process
-
-        wait(NULL); // Wait for child to finish
-        
-        printf("Child process finished\n");
-    } else {
-        perror("fork failed");
-    }
+    
 
     // printf("Opening...\n");
     // int fd = open("fss_in", O_WRONLY);
