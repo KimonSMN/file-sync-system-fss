@@ -50,15 +50,23 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 
 int main(int argc, char* argv[]){
 
+    char* manager_log, *config_file;
+    int worker_limit;
+
     // Flags
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-l") == 0) {
-            char* manager_log = argv[++i];
-        } else if (strcmp(argv[i], "-s") == 0) {
-            char* config_file = argv[++i];
-        } else if (strcmp(argv[i], "-o") == 0){
-            int worker_limit = atoi(argv[++i]);
+            manager_log = argv[++i];
+        } else if (strcmp(argv[i], "-c") == 0) {
+            config_file = argv[++i];
+        } else if (strcmp(argv[i], "-n") == 0){
+            worker_limit = atoi(argv[++i]);
         }
+    }
+
+    if (manager_log == NULL || config_file == NULL || worker_limit <= 0) {
+        printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_limit>\n");
+        return 1;
     }
 
     // Create necessary named-pipes
