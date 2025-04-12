@@ -14,6 +14,18 @@
 
 #include "sync_info_mem_store.h"
 
+watchDir* create_dir(char* source_dir, char* target_dir){
+    watchDir* dir = malloc(sizeof(watchDir));
+    dir->source_dir = strdup(source_dir);
+    dir->target_dir = strdup(target_dir);
+    dir->active = 1;
+    dir->last_sync_time = 0;
+    dir->error_count = 0;
+    dir->next = NULL;
+    return dir;
+}
+
+
 int create_named_pipe(char *name){
     if(mkfifo(name, 0777) == -1){
         if (errno != EEXIST){
@@ -53,6 +65,9 @@ int main(int argc, char* argv[]){
     create_named_pipe("fss_in");
     create_named_pipe("fss_out");
 
+    // Initialize hash table.
+    hashTable* table = init_hash_table();
+
     // Read config file
     FILE *fp = fopen("./config.txt", "r");
     if (!fp) {
@@ -77,13 +92,15 @@ int main(int argc, char* argv[]){
                 perror("Problem in Config file");
             }
         }
-        check_dir(source_dir);
-        check_dir(target_dir);
-        // HAVE TO ADD SYNC_INFO_MEM_STORE
+        if (check_dir(source_dir) == 0 && check_dir(target_dir) == 0) {
+            watchDir* curr = create_dir(source_dir, target_dir);
+            insert_watchDir(table, curr);
+        }
     }
 
+    print_hash_table(table);
+
     fclose(fp); // Close config file
-    printf("PROGRAM PID: %d\n",getpid());
 
     pid_t pid = fork();
 
@@ -91,7 +108,6 @@ int main(int argc, char* argv[]){
         // Child process
         char *args[] = {"./build/worker", "arg1", "arg2", NULL};
         execvp(args[0], args);
-        printf("WORKER PID SHOULD BE: %d\n",getpid());
 
         // If exec fails
         perror("execvp failed");
@@ -104,24 +120,7 @@ int main(int argc, char* argv[]){
     } else {
         perror("fork failed");
     }
-    printf("PROGRAM PID: %d\n",getpid());
 
-    // TEST HASH TABLE
-
-    hashTable* table = init_hash_table();
-
-    watchDir* dir1 = malloc(sizeof(watchDir));
-    dir1->source_dir = strdup("./dummy/docs");
-    dir1->target_dir = strdup("./dummy/backup");
-    dir1->last_sync_time = 0;
-    dir1->active = 1;
-    dir1->error_count = 0;
-    dir1->next = NULL;
-    insert_watchDir(table, dir1);
-
-    print_hash_table(table);
-
-    destroy_hash_table(table);
     // printf("Opening...\n");
     // int fd = open("fss_in", O_WRONLY);
     // printf("Open\n");
@@ -132,6 +131,8 @@ int main(int argc, char* argv[]){
     // printf("Written\n");
     // close(fd);
     // printf("Closed\n");
-    return 0;
 
+    destroy_hash_table(table);
+
+    return 0;
 }

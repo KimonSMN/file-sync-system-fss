@@ -1,2 +1,3 @@
 /home/kimon/hw1-KimonSMN/dummy/docs /home/kimon/hw1-KimonSMN/dummy/backup
-/home/kimon/hw1-KimonSMN/dummy/help /home/kimon/hw1-KimonSMN/dummy/helpbackup
+/home/kimon/hw1-KimonSMN/include /home/kimon/hw1-KimonSMN/src
+/home/kimon/hw1-KimonSMN/dummy/test /home/kimon/hw1-KimonSMN/dummy/testbackup
