@@ -51,7 +51,7 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 int main(int argc, char* argv[]){
 
     char* manager_log, *config_file;
-    int worker_limit;
+    int worker_limit = 5;   // default value is 5.
 
     // Flags
     for (int i = 1; i < argc; i++) {
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if (manager_log == NULL || config_file == NULL || worker_limit <= 0) {
+    if (manager_log == NULL || config_file == NULL || worker_limit < 5) {
         printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_limit>\n");
         return 1;
     }
@@ -105,7 +105,6 @@ int main(int argc, char* argv[]){
             watchDir* curr = create_dir(source_dir, target_dir);
             insert_watchDir(table, curr);
         
-            
             pid_t pid = fork();
 
             if (pid == 0) {
