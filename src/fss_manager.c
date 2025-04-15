@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
+#include <stdarg.h>
 
 #include "sync_info_mem_store.h"
 
@@ -25,7 +26,6 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     return dir;
 }
 
-
 int create_named_pipe(char *name){
     if(mkfifo(name, 0777) == -1){
         if (errno != EEXIST){
@@ -34,6 +34,18 @@ int create_named_pipe(char *name){
         }
     }
     return 0;
+}
+
+
+void printf_fprintf(FILE* stream, char* format, ...){
+    va_list ap;
+    va_start(ap, format);
+    vprintf(format, ap);
+    va_end(ap);
+
+    va_start(ap, format);
+    vfprintf(stream, format, ap);
+    va_end(ap);
 }
 
 int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
@@ -83,6 +95,12 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    FILE *mlfp = fopen("./logs/manager-log", "w");
+    if (!mlfp) {
+        perror("Failed to open file");
+        return 1;
+    }
+
     char line[1024], source_dir[512], target_dir[512];
     
     while(fgets(line, sizeof(line), fp)) {
@@ -102,6 +120,7 @@ int main(int argc, char* argv[]){
         }
         // Inserts Valid Directories to hashtable
         if (check_dir(source_dir) == 0 && check_dir(target_dir) == 0) {
+        
             watchDir* curr = create_dir(source_dir, target_dir);
             insert_watchDir(table, curr);
         
@@ -110,15 +129,27 @@ int main(int argc, char* argv[]){
             if (pid == 0) {
                 // Child process
                 char *args[] = {"./build/worker", source_dir, target_dir, NULL};
+                
                 execvp(args[0], args);
-        
+
                 // If exec fails
                 perror("execvp failed");
             } else if (pid > 0) {
                 // Parent process
-        
-                wait(NULL); // Wait for child to finish
-                
+
+                // Print messages
+                time_t t = time(NULL);
+                struct tm tm = *localtime(&t);
+
+                printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source_dir, target_dir);
+                printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source_dir);
+
+                // wait(NULL); // Wait for child to finish
+
                 printf("Child process finished\n");
             } else {
                 perror("fork failed");
@@ -128,7 +159,7 @@ int main(int argc, char* argv[]){
     }
 
     // print_hash_table(table);
-
+    fclose(mlfp);
     fclose(fp); // Close config file
 
     

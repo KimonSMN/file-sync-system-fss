@@ -59,8 +59,8 @@ int copy_file(char* path_from, char* path_to ){
 
 
 int main(int argc, char* argv[]){
-    printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
-    copy_file(argv[1],"./dummy/backup" );
+    // printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
+    copy_file(argv[1],"./dummy/backup" );   // FULL SYNC
     //open, read, write, unlink, close
 
     return 0;
