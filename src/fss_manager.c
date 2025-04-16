@@ -16,6 +16,9 @@
 
 #include "sync_info_mem_store.h"
 
+
+#define MAX_WORKERS 5  // MAX IS 5.
+
 watchDir* create_dir(char* source_dir, char* target_dir){
     watchDir* dir = malloc(sizeof(watchDir));
     dir->source_dir = strdup(source_dir);
@@ -63,7 +66,8 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 int main(int argc, char* argv[]){
 
     char* manager_log, *config_file;
-    int worker_limit = 5;   // default value is 5.
+    int worker_count = MAX_WORKERS;   // default value is 5 if not specified.
+    int active_workers = 0;
 
     // Flags
     for (int i = 1; i < argc; i++) {
@@ -72,12 +76,12 @@ int main(int argc, char* argv[]){
         } else if (strcmp(argv[i], "-c") == 0) {
             config_file = argv[++i];
         } else if (strcmp(argv[i], "-n") == 0){
-            worker_limit = atoi(argv[++i]);
+            worker_count = atoi(argv[++i]);
         }
     }
 
-    if (manager_log == NULL || config_file == NULL || worker_limit < 5) {
-        printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_limit>\n");
+    if (manager_log == NULL || config_file == NULL || worker_count < MAX_WORKERS) {
+        printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_count>\n");
         return 1;
     }
 
@@ -123,40 +127,45 @@ int main(int argc, char* argv[]){
         
             watchDir* curr = create_dir(source_dir, target_dir);    // Creates directory
             insert_watchDir(table, curr);                           // Inserts to table
-        
-            pid_t pid = fork(); 
-
-            if (pid == 0) {
-                // Child process
-                char *args[] = {"./build/worker", source_dir, target_dir, "ALL", "FULL", NULL};
-                execvp(args[0], args);
-
-                // If exec fails
-                perror("execvp failed");
-            } else if (pid > 0) {
-                // Parent process
-
-                // Print messages
-                time_t t = time(NULL);
-                struct tm tm = *localtime(&t);
-
-                printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source_dir, target_dir);
-                printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source_dir);
+            
+            if (active_workers < worker_count){
                 
-                curr->active = 1; // set current directory to active (we are watching it). 
-               
+                pid_t pid = fork(); 
+        
+                if (pid == 0) {
+                    // Child process
+                    char *args[] = {"./build/worker", source_dir, target_dir, "ALL", "FULL", NULL};
+                    execvp(args[0], args);
 
-                // wait(NULL); // Wait for child to finish
+                    // If exec fails
+                    perror("execvp failed");
+                } else if (pid > 0) {
+                    // Parent process
 
-                printf("Child process finished\n");
-            } else {
-                perror("fork failed");
+                    active_workers++;   // Increase worker count.
+
+                    // Print messages
+                    time_t t = time(NULL);
+                    struct tm tm = *localtime(&t);
+
+                    printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
+                        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                        source_dir, target_dir);
+                    printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
+                        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                        source_dir);
+                    
+                    curr->active = 1; // set current directory to active (we are watching it). 
+
+                    // wait(NULL); // Wait for child to finish
+
+                    printf("Child process finished\n");
+                } else {
+                    perror("fork failed");
+                }
+            } else { // If active workers > 5
+                // Add to queue
             }
-
         }
     }
 
@@ -166,16 +175,7 @@ int main(int argc, char* argv[]){
 
     
 
-    // printf("Opening...\n");
-    // int fd = open("fss_in", O_WRONLY);
-    // printf("Open\n");
-    // int x = 97;
-    // if(write(fd, &x, sizeof(int)) == -1){
-    //     return 2;
-    // }
-    // printf("Written\n");
-    // close(fd);
-    // printf("Closed\n");
+
 
     destroy_hash_table(table);
 
