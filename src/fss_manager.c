@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include "sync_info_mem_store.h"
 
@@ -19,7 +20,7 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     watchDir* dir = malloc(sizeof(watchDir));
     dir->source_dir = strdup(source_dir);
     dir->target_dir = strdup(target_dir);
-    dir->active = 1;
+    dir->active = 0;
     dir->last_sync_time = 0;
     dir->error_count = 0;
     dir->next = NULL;
@@ -35,7 +36,6 @@ int create_named_pipe(char *name){
     }
     return 0;
 }
-
 
 void printf_fprintf(FILE* stream, char* format, ...){
     va_list ap;
@@ -119,17 +119,16 @@ int main(int argc, char* argv[]){
             }
         }
         // Inserts Valid Directories to hashtable
-        if (check_dir(source_dir) == 0 && check_dir(target_dir) == 0) {
+        if (check_dir(source_dir) == 0 && check_dir(target_dir) == 0) { // NOTE TO SELF TO CHECK IF I NEED TO IMPLEMENT MK DIR IF TARGET DIR DOESWNT EXIST
         
-            watchDir* curr = create_dir(source_dir, target_dir);
-            insert_watchDir(table, curr);
+            watchDir* curr = create_dir(source_dir, target_dir);    // Creates directory
+            insert_watchDir(table, curr);                           // Inserts to table
         
-            pid_t pid = fork();
+            pid_t pid = fork(); 
 
             if (pid == 0) {
                 // Child process
-                char *args[] = {"./build/worker", source_dir, target_dir, NULL};
-                
+                char *args[] = {"./build/worker", source_dir, target_dir, "ALL", "FULL", NULL};
                 execvp(args[0], args);
 
                 // If exec fails
@@ -147,6 +146,9 @@ int main(int argc, char* argv[]){
                 printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
                     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
                     source_dir);
+                
+                curr->active = 1; // set current directory to active (we are watching it). 
+               
 
                 // wait(NULL); // Wait for child to finish
 

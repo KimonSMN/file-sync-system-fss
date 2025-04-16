@@ -30,15 +30,6 @@ int copy_file(char* path_from, char* path_to ){
             if (fd == -1)
                 return 1;
 
-            char buffer[4096];
-            int bytesRead = read(fd, buffer, sizeof(buffer)); // Read File.
-        
-            close(fd); // Close File.
-
-            // Opens Target Directory.
-            DIR* target = opendir(path_to);
-            if (source == NULL) 
-                return 1;
 
             // Recreate the path and add the previous file to the Directory
             char path2[100] = { 0 };
@@ -47,20 +38,32 @@ int copy_file(char* path_from, char* path_to ){
             strcat(path2, source_entity->d_name);   // target_directory/source_file_name
 
             int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777);  // Creates file if it doesnt exist. If it does it overwrites it. 
-            if(write(target_fd, buffer, bytesRead) != bytesRead){   // Writes Data to the File.
-                perror("Error: Writing Failed\n");
-            }   
+            
+            char buffer[4096];
+            ssize_t bytesRead;
+            while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0) {
+                if (write(target_fd, buffer, bytesRead) != bytesRead) {
+                    perror("Write failed");
+                    break;
+                }
+            }
+            close(fd); // Close File.
             close(target_fd);
         }
         source_entity = readdir(source);
     }
+    closedir(source);
     return 0;
 }
 
 
 int main(int argc, char* argv[]){
     // printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
-    copy_file(argv[1],"./dummy/backup" );   // FULL SYNC
+    // FULL, ADDED, MODIFIED, DELETED
+    if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
+        copy_file(argv[1], argv[2]);   // FULL SYNC
+    }
+
     //open, read, write, unlink, close
 
     return 0;

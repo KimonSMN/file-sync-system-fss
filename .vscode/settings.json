@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "dirent.h": "c"
+        "dirent.h": "c",
+        "sync_info_mem_store.h": "c"
     }
 }
