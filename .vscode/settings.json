@@ -4,6 +4,8 @@
         "sync_info_mem_store.h": "c",
         "limits.h": "c",
         "queue.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "type_traits": "c"
     }
 }

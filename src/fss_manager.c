@@ -15,7 +15,7 @@
 #include <limits.h>
 
 #include "sync_info_mem_store.h"
-
+#include "queue.h"
 
 #define MAX_WORKERS 5  // MAX IS 5.
 
@@ -92,6 +92,9 @@ int main(int argc, char* argv[]){
     // Initialize hash table.
     hashTable* table = init_hash_table();
 
+    // Initialize Queue.
+    queue* queue = init_queue();
+
     // Read config file
     FILE *fp = fopen("./config.txt", "r");
     if (!fp) {
@@ -165,6 +168,9 @@ int main(int argc, char* argv[]){
                 }
             } else { // If active workers > 5
                 // Add to queue
+
+
+
             }
         }
     }

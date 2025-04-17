@@ -1,48 +1,74 @@
 #include <stdio.h>
+#include <string.h>
+
 #include "queue.h"
+
+node* init_node(char* source, char* target, char* filename, char* operation){
+    node* job = malloc(sizeof(struct node));
+    if (job == NULL) return NULL;
+    job->source_dir = strdup(source);
+    job->target_dir = strdup(target);
+    job->filename = strdup(filename);
+    job->operation = strdup(operation);
+    job->next = NULL;
+
+    return job;
+}
+
+void destroy_node(node* job){
+    if(job == NULL) return;
+
+    free(job->source_dir);
+    free(job->target_dir);
+    free(job->filename);
+    free(job->operation);
+    free(job);
+}
 
 queue* init_queue(){
     queue* q = malloc(sizeof(struct queue));
+    if(q == NULL) return NULL;
     q->head = NULL;
     q->tail = NULL;
     return q;
 }
 
-int enqueue(queue* q, int value){
-    node* node = malloc(sizeof(struct node)); // create node
-    if (node == NULL){
-        return 1;
-    }
-    node->value = value;
-    node->next = NULL;
+int enqueue(queue* q, node* job){
+    if (q == NULL) return 1;
+    if (job == NULL) return 1;
+    
+    job->next = NULL;
     if (q->tail != NULL){   // if there is a tail connect the node next to it
-        q->tail->next = node;
+        q->tail->next = job;
     }
-    q->tail = node;
+    q->tail = job;
     if(q->head == NULL){
-        q->head = node;
+        q->head = job;
     }
     return 0;
 }
 
-int dequeue(queue* q){
-    if(q->head == NULL){
-        return 1;
-    }
-    node* tmp = q->head;
-    int result = tmp->value;
-    q->head = q->head->next;
+node* dequeue(queue* q){
+    if(q->head == NULL) return NULL;
+    
+    node* job = q->head;
+    q->head = job->next;
     if(q->head == NULL) {
         q->tail = NULL;
     }
-    free(tmp);
-    return result;
+    return job;
 }
 
-// int isEmpty(queue* q){
+int isEmpty(queue* q){
+    return q->head == NULL;
+}
 
-// }
-
-// int sizeOfQueue(queue* q){
-
-// }
+int sizeOfQueue(queue* q){
+    int size = 0;
+    node* curr = q->head;
+    while(curr != NULL){
+        size++;
+        curr = curr->next;
+    } 
+    return size;
+}
