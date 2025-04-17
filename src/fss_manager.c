@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include <limits.h>
 
+#include <signal.h>
+
 #include "sync_info_mem_store.h"
 #include "queue.h"
 
@@ -63,6 +65,7 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 }
 
 
+
 int main(int argc, char* argv[]){
 
     char* manager_log, *config_file;
@@ -93,7 +96,7 @@ int main(int argc, char* argv[]){
     hashTable* table = init_hash_table();
 
     // Initialize Queue.
-    queue* queue = init_queue();
+    queue* q = init_queue();
 
     // Read config file
     FILE *fp = fopen("./config.txt", "r");
@@ -162,13 +165,15 @@ int main(int argc, char* argv[]){
 
                     // wait(NULL); // Wait for child to finish
 
-                    printf("Child process finished\n");
+                    // printf("Child process finished\n");
                 } else {
                     perror("fork failed");
                 }
             } else { // If active workers > 5
-                // Add to queue
-
+                
+                // Add to queue.
+                node* job = init_node(source_dir, target_dir, "ALL", "FULL");
+                enqueue(q, job);
 
 
             }
@@ -178,10 +183,6 @@ int main(int argc, char* argv[]){
     // print_hash_table(table);
     fclose(mlfp);
     fclose(fp); // Close config file
-
-    
-
-
 
     destroy_hash_table(table);
 

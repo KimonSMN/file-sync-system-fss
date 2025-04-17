@@ -60,9 +60,12 @@ int copy_file(char* path_from, char* path_to ){
 int main(int argc, char* argv[]){
     // printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
     // FULL, ADDED, MODIFIED, DELETED
+
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
         copy_file(argv[1], argv[2]);   // FULL SYNC
     }
+
+
 
     //open, read, write, unlink, close
 
