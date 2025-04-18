@@ -18,6 +18,8 @@ typedef struct watchDir{
     int active;             // 1 watching, 0 nothing
     int error_count;        // Number of errors occured during sync
 
+    int watchdesc;          // watch descriptor.
+
     struct watchDir* next;  // Seperate chaining
 } watchDir;
 

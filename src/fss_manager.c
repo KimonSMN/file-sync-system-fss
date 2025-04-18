@@ -20,6 +20,8 @@
 #include "queue.h"
 
 #define MAX_WORKERS 5  // MAX IS 5.
+#define MANAGER_LOG "./logs/manager-log"
+#define CONSOLE_LOG "./logs/console-log"
 
 watchDir* create_dir(char* source_dir, char* target_dir){
     watchDir* dir = malloc(sizeof(watchDir));
@@ -29,6 +31,7 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     dir->last_sync_time = 0;
     dir->error_count = 0;
     dir->next = NULL;
+    // dir->watchdesc = 0;
     return dir;
 }
 
@@ -73,11 +76,13 @@ void handler(){ // SIGCHLD
         
     int status;
     node* job;
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    
     while((waitpid(-1, &status, WNOHANG)) > 0 ) {
         active_workers--;
         if(isEmpty(q) == 0) {    // if the queue isn't empty.
             job = dequeue(q); // remove the worker from it.
-            printf("A WORKER IS READY TO RUN %s -> %s\n", job->source_dir, job->target_dir);
         
             pid_t pid = fork(); // new worker
             if (pid == 0) { // child
@@ -85,8 +90,17 @@ void handler(){ // SIGCHLD
                 execvp(args[0], args);
 
             } else if(pid > 0) { // parent
+                char buffer[1024];
+                snprintf(buffer, sizeof(buffer),"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n"
+                                "[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n",
+                                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, job->source_dir, job->target_dir,
+                                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, job->source_dir);
                 
+                write(STDOUT_FILENO,buffer, strlen(buffer));
+                int manager_fd = open(MANAGER_LOG, O_WRONLY | O_CREAT | O_APPEND, 0777);
+                write(manager_fd, buffer, strlen(buffer)) ;
                 active_workers++;
+
                 destroy_node(job);
             }
         }
@@ -193,9 +207,11 @@ int main(int argc, char* argv[]){
                     
                     curr->active = 1; // set current directory to active (we are watching it). 
 
-                    // wait(NULL); // Wait for child to finish
+                    // Start watching directory.
+                    int inotify_fd = inotify_init();
 
-                    // printf("Child process finished\n");
+                    curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_MODIFY | IN_CREATE | IN_DELETE);
+
                 } else {
                     perror("fork failed");
                 }
@@ -206,19 +222,16 @@ int main(int argc, char* argv[]){
                 printf("JOB [%s -> %s] QUEUED\n", source_dir, target_dir);
                 enqueue(q, job);
 
-
-                // have to notify when a process ends
-
             }
         }
     }
-
-    while (1) { sleep(1); }
 
 
     // print_hash_table(table);
     fclose(mlfp);
     fclose(fp); // Close config file
+
+    while (1) { sleep(1); }
 
     destroy_hash_table(table);
 
