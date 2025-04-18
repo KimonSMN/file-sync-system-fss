@@ -20,9 +20,10 @@
 #include "queue.h"
 
 #define MAX_WORKERS 5  // MAX IS 5.
-#define MANAGER_LOG "./logs/manager-log"
-#define CONSOLE_LOG "./logs/console-log"
-
+#define MANAGER_LOG_PATH "./logs/manager-log"
+#define CONSOLE_LOG_PATH "./logs/console-log"
+#define CONFIG_PATH "./config.txt"
+#define WORKER_PATH "./build/worker"
 watchDir* create_dir(char* source_dir, char* target_dir){
     watchDir* dir = malloc(sizeof(watchDir));
     dir->source_dir = strdup(source_dir);
@@ -86,7 +87,7 @@ void handler(){ // SIGCHLD
         
             pid_t pid = fork(); // new worker
             if (pid == 0) { // child
-                char* args[] = {"./build/worker", job->source_dir, job->target_dir, job->filename, job->operation, NULL};
+                char* args[] = {WORKER_PATH, job->source_dir, job->target_dir, job->filename, job->operation, NULL};
                 execvp(args[0], args);
 
             } else if(pid > 0) { // parent
@@ -97,7 +98,7 @@ void handler(){ // SIGCHLD
                                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, job->source_dir);
                 
                 write(STDOUT_FILENO,buffer, strlen(buffer));
-                int manager_fd = open(MANAGER_LOG, O_WRONLY | O_CREAT | O_APPEND, 0777);
+                int manager_fd = open(MANAGER_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0777);
                 write(manager_fd, buffer, strlen(buffer)) ;
                 active_workers++;
 
@@ -143,17 +144,20 @@ int main(int argc, char* argv[]){
     q = init_queue();
 
     // Read config file
-    FILE *fp = fopen("./config.txt", "r");
+    FILE *fp = fopen(CONFIG_PATH, "r");
     if (!fp) {
         perror("Failed to open file");
         return 1;
     }
 
-    FILE *mlfp = fopen("./logs/manager-log", "w");
+    FILE *mlfp = fopen(MANAGER_LOG_PATH, "w");
     if (!mlfp) {
         perror("Failed to open file");
         return 1;
     }
+
+    // INITIALIZE INOTIFY INSTANCE. 
+    int inotify_fd = inotify_init();
 
     char line[1024], source_dir[512], target_dir[512];
     
@@ -184,7 +188,7 @@ int main(int argc, char* argv[]){
         
                 if (pid == 0) {
                     // Child process
-                    char *args[] = {"./build/worker", source_dir, target_dir, "ALL", "FULL", NULL};
+                    char *args[] = {WORKER_PATH, source_dir, target_dir, "ALL", "FULL", NULL};
                     execvp(args[0], args);
 
                     // If exec fails
@@ -208,15 +212,12 @@ int main(int argc, char* argv[]){
                     curr->active = 1; // set current directory to active (we are watching it). 
 
                     // Start watching directory.
-                    int inotify_fd = inotify_init();
-
-                    curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_MODIFY | IN_CREATE | IN_DELETE);
+                    curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_CREATE | IN_MODIFY | IN_DELETE);
 
                 } else {
                     perror("fork failed");
                 }
             } else { // If active workers > 5
-                
                 // Add to queue.
                 node* job = init_node(source_dir, target_dir, "ALL", "FULL");
                 printf("JOB [%s -> %s] QUEUED\n", source_dir, target_dir);
@@ -226,12 +227,30 @@ int main(int argc, char* argv[]){
         }
     }
 
-
     // print_hash_table(table);
     fclose(mlfp);
     fclose(fp); // Close config file
 
-    while (1) { sleep(1); }
+    char buffer[1024];
+    ssize_t numRead;
+
+    while (1) { 
+        numRead = read(inotify_fd, buffer, sizeof(buffer));
+
+        for (char* p = buffer; p < buffer + numRead;){
+            struct inotify_event* event = (struct inotify_event *) p;
+
+            if (event->len > 0) {
+                if (event->mask & IN_CREATE)
+                    printf("IN_CREATE: %s\n", event->name);
+                else if (event->mask & IN_MODIFY)
+                    printf("IN_MODIFY: %s\n", event->name);
+                else if (event->mask & IN_DELETE)
+                    printf("IN_DELETE: %s\n", event->name);
+            }
+            p += sizeof(struct inotify_event) + event->len;
+        }
+    }
 
     destroy_hash_table(table);
 
