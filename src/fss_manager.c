@@ -64,13 +64,43 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
     }
 }
 
+// global variables
+int active_workers;
+queue* q;
+
+void handler(){ // SIGCHLD
+    // This signal is sent to a parent process whenever one of its child processes terminates or stops.
+        
+    int status;
+    node* job;
+    while((waitpid(-1, &status, WNOHANG)) > 0 ) {
+        active_workers--;
+        if(isEmpty(q) == 0) {    // if the queue isn't empty.
+            job = dequeue(q); // remove the worker from it.
+            printf("A WORKER IS READY TO RUN %s -> %s\n", job->source_dir, job->target_dir);
+        
+            pid_t pid = fork(); // new worker
+            if (pid == 0) { // child
+                char* args[] = {"./build/worker", job->source_dir, job->target_dir, job->filename, job->operation, NULL};
+                execvp(args[0], args);
+
+            } else if(pid > 0) { // parent
+                
+                active_workers++;
+                destroy_node(job);
+            }
+        }
+    }
+}
 
 
 int main(int argc, char* argv[]){
 
+    signal(SIGCHLD, handler);
+
     char* manager_log, *config_file;
     int worker_count = MAX_WORKERS;   // default value is 5 if not specified.
-    int active_workers = 0;
+    active_workers = 0;
 
     // Flags
     for (int i = 1; i < argc; i++) {
@@ -96,7 +126,7 @@ int main(int argc, char* argv[]){
     hashTable* table = init_hash_table();
 
     // Initialize Queue.
-    queue* q = init_queue();
+    q = init_queue();
 
     // Read config file
     FILE *fp = fopen("./config.txt", "r");
@@ -173,12 +203,18 @@ int main(int argc, char* argv[]){
                 
                 // Add to queue.
                 node* job = init_node(source_dir, target_dir, "ALL", "FULL");
+                printf("JOB [%s -> %s] QUEUED\n", source_dir, target_dir);
                 enqueue(q, job);
 
+
+                // have to notify when a process ends
 
             }
         }
     }
+
+    while (1) { sleep(1); }
+
 
     // print_hash_table(table);
     fclose(mlfp);

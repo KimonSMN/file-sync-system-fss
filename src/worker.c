@@ -62,7 +62,9 @@ int main(int argc, char* argv[]){
     // FULL, ADDED, MODIFIED, DELETED
 
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
+        sleep(2);
         copy_file(argv[1], argv[2]);   // FULL SYNC
+        printf("WORKER FOR %s -> %s DONE\n", argv[1], argv[2]);
     }
 
 
