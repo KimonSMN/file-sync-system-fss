@@ -15,6 +15,7 @@
 #include <limits.h>
 
 #include <signal.h>
+#include <poll.h> 
 
 #include "sync_info_mem_store.h"
 #include "queue.h"
@@ -36,6 +37,7 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     return dir;
 }
 
+/* Create a new FIFO (with error check). */
 int create_named_pipe(char *name){
     if(mkfifo(name, 0777) == -1){
         if (errno != EEXIST){
@@ -46,6 +48,7 @@ int create_named_pipe(char *name){
     return 0;
 }
 
+/* Write formatted output to stream & to stdout. */
 void printf_fprintf(FILE* stream, char* format, ...){
     va_list ap;
     va_start(ap, format);
@@ -57,6 +60,8 @@ void printf_fprintf(FILE* stream, char* format, ...){
     va_end(ap);
 }
 
+/* If return is 1, path doesn't exist.  
+   If return is 0, path exists.  */
 int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
     struct stat st;
     if(stat(path, &st) != 0) {
@@ -136,6 +141,11 @@ int main(int argc, char* argv[]){
     // Create necessary named-pipes
     create_named_pipe("fss_in");
     create_named_pipe("fss_out");
+
+    int fss_in = open("./fss_in", O_RDONLY | O_NONBLOCK);
+    if (fss_in == -1) {
+        return 1;
+    }
 
     // Initialize hash table.
     hashTable* table = init_hash_table();
@@ -232,24 +242,51 @@ int main(int argc, char* argv[]){
     fclose(fp); // Close config file
 
     char buffer[1024];
-    ssize_t numRead;
+    struct pollfd fds[2];
+
+    fds[0].fd = inotify_fd;
+    fds[0].events = POLLIN;
+
+    fds[1].fd = fss_in;
+    fds[1].events = POLLIN;
+
 
     while (1) { 
-        numRead = read(inotify_fd, buffer, sizeof(buffer));
+        int ret = poll(fds, 2, -1);
+        // if (ret == -1) {
+        //     break;
+        // }
 
-        for (char* p = buffer; p < buffer + numRead;){
-            struct inotify_event* event = (struct inotify_event *) p;
+        if (fds[0].revents & POLLIN) {
+            ssize_t numRead = read(inotify_fd, buffer, sizeof(buffer));
 
-            if (event->len > 0) {
-                if (event->mask & IN_CREATE)
-                    printf("IN_CREATE: %s\n", event->name);
-                else if (event->mask & IN_MODIFY)
-                    printf("IN_MODIFY: %s\n", event->name);
-                else if (event->mask & IN_DELETE)
-                    printf("IN_DELETE: %s\n", event->name);
+            for (char* p = buffer; p < buffer + numRead;){
+                struct inotify_event* event = (struct inotify_event *) p;
+    
+                if (event->len > 0) {
+                    if (event->mask & IN_CREATE)
+                        printf("IN_CREATE: %s\n", event->name);
+                    else if (event->mask & IN_MODIFY)
+                        printf("IN_MODIFY: %s\n", event->name);
+                    else if (event->mask & IN_DELETE)
+                        printf("IN_DELETE: %s\n", event->name);
+                }
+                p += sizeof(struct inotify_event) + event->len;
             }
-            p += sizeof(struct inotify_event) + event->len;
         }
+
+        if (fds[1].revents & POLLIN) {
+            ssize_t r = read(fss_in, buffer, sizeof(buffer) - 1);
+            if (r > 0) {
+                printf("[COMMAND] Received: %s\n", buffer);
+                // handle the command recieved.
+            } else if (r == 0) {
+                close(fss_in);
+                fss_in = open("./fss_in", O_RDONLY | O_NONBLOCK);
+                fds[1].fd = fss_in;
+            }
+        }
+      
     }
 
     destroy_hash_table(table);

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "sync_info_mem_store.h"
 
-// Hash function
+/* djb2 hash function. */
 unsigned long hash(const char *source_dir){
     unsigned long hash = 5381;
     int c;
@@ -12,6 +12,7 @@ unsigned long hash(const char *source_dir){
 }
 
 
+/* Initialize an empty hash-table. */
 hashTable* init_hash_table(){
     hashTable* table = malloc(sizeof(hashTable));
     if(table == NULL){
@@ -19,11 +20,12 @@ hashTable* init_hash_table(){
     }
     
     for(int i = 0; i < HASH_TABLE_SIZE; i++) {
-        table->buckets[i] = NULL;       // Initialize everything to NULL
+        table->buckets[i] = NULL;
     }
     return table;
 }
 
+/* Insert to hash-table the specified dir. */
 void insert_watchDir(hashTable* table, watchDir* dir){
     int index = hash(dir->source_dir);
     
@@ -41,6 +43,9 @@ void insert_watchDir(hashTable* table, watchDir* dir){
 
 }
 
+/* Search for source_dir (key) inside hash-table.
+    If found, return the directory.
+    Else return NULL.  */
 watchDir* find_watchDir(hashTable* table, const char* source_dir){
 
     if (table == NULL || source_dir == NULL) {
@@ -60,6 +65,9 @@ watchDir* find_watchDir(hashTable* table, const char* source_dir){
     return NULL;
 }
 
+/* Remove source_dir from hash-table.
+    If success return 0.
+    Else return 1.*/
 int remove_watchDir(hashTable* table, const char* source_dir){
     watchDir* to_remove = table->buckets[hash(source_dir)];
     watchDir* prev = NULL;
@@ -99,6 +107,8 @@ void print_hash_table(hashTable* table){
     }
 }
 
+
+/* Free allocated memory of hash-table. */
 void destroy_hash_table(hashTable* table){
     if (table == NULL) {
         return;
