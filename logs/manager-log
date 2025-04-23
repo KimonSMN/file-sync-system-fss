@@ -1,14 +1,18 @@
-[2025-04-23 16:50:41] Added directory: test/source1 -> test/target1
-[2025-04-23 16:50:41] Monitoring started for test/source1
-[2025-04-23 16:50:41] Added directory: test/source2 -> test/target2
-[2025-04-23 16:50:41] Monitoring started for test/source2
-[2025-04-23 16:50:41] Added directory: test/source3 -> test/target3
-[2025-04-23 16:50:41] Monitoring started for test/source3
-[2025-04-23 16:50:41] Added directory: test/source4 -> test/target4
-[2025-04-23 16:50:41] Monitoring started for test/source4
-[2025-04-23 16:50:41] Added directory: test/source5 -> test/target5
-[2025-04-23 16:50:41] Monitoring started for test/source5
-[2025-04-23 16:50:43] Added directory: test/source6 -> test/target6
-[2025-04-23 16:50:43] Monitoring started for test/source6
-[2025-04-23 16:50:43] Added directory: test/source7 -> test/target7
-[2025-04-23 16:50:43] Monitoring started for test/source7
+[2025-04-23 17:28:28] Added directory: test/source1 -> test/target1
+[2025-04-23 17:28:28] Monitoring started for test/source1
+[2025-04-23 17:28:28] Added directory: test/source2 -> test/target2
+[2025-04-23 17:28:28] Monitoring started for test/source2
+[2025-04-23 17:28:28] Added directory: test/source3 -> test/target3
+[2025-04-23 17:28:28] Monitoring started for test/source3
+[2025-04-23 17:28:28] Added directory: test/source4 -> test/target4
+[2025-04-23 17:28:28] Monitoring started for test/source4
+[2025-04-23 17:28:28] Added directory: test/source5 -> test/target5
+[2025-04-23 17:28:28] Monitoring started for test/source5
+[2025-04-23 17:28:30] Added directory: test/source6 -> test/target6
+[2025-04-23 17:28:30] Monitoring started for test/source6
+[2025-04-23 17:28:30] Added directory: test/source7 -> test/target7
+[2025-04-23 17:28:30] Monitoring started for test/source7
+[2025-04-23 17:28:39] Added directory: test/source8 -> test/target8
+[2025-04-23 17:28:39] Monitoring started for test/source8
+[2025-04-23 17:29:15] Added directory: test/source8 -> test/source8
+[2025-04-23 17:29:15] Monitoring started for test/source8

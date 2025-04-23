@@ -181,7 +181,6 @@ int main(int argc, char* argv[]){
                 node* job = init_node(source_dir, target_dir, "ALL", "FULL");
                 printf("JOB [%s -> %s] QUEUED\n", source_dir, target_dir);
                 enqueue(q, job);
-
             }
         }
     }
@@ -231,7 +230,7 @@ int main(int argc, char* argv[]){
                 char* target = strtok(NULL," ");
                 
                 if (strcmp(command, "add") == 0) {
-                    manager_add(source, target, inotify_fd, table);
+                    manager_add(source, target, inotify_fd, table, active_workers, worker_count, q);
                 } else if (strcmp(command, "cancel") == 0) {
 
                 } else if (strcmp(command, "status") == 0) {
