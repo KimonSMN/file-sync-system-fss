@@ -39,5 +39,6 @@ void print_hash_table(hashTable* table);
 
 void destroy_hash_table(hashTable* table);
 
+watchDir* create_dir(char* source_dir, char* target_dir);
 
 #endif

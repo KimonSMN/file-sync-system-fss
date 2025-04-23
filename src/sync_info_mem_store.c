@@ -107,7 +107,6 @@ void print_hash_table(hashTable* table){
     }
 }
 
-
 /* Free allocated memory of hash-table. */
 void destroy_hash_table(hashTable* table){
     if (table == NULL) {
@@ -126,4 +125,17 @@ void destroy_hash_table(hashTable* table){
         }
     }
     free(table);
+}
+
+/* Create a watchDir instance and return it. */
+watchDir* create_dir(char* source_dir, char* target_dir){
+    watchDir* dir = malloc(sizeof(watchDir));
+    dir->source_dir = strdup(source_dir);
+    dir->target_dir = strdup(target_dir);
+    dir->active = 0;
+    dir->last_sync_time = 0;
+    dir->error_count = 0;
+    dir->next = NULL;
+    // dir->watchdesc = 0;
+    return dir;
 }

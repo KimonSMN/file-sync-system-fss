@@ -19,59 +19,8 @@
 
 #include "sync_info_mem_store.h"
 #include "queue.h"
-
-#define MAX_WORKERS 5  // MAX IS 5.
-#define MANAGER_LOG_PATH "./logs/manager-log"
-#define CONSOLE_LOG_PATH "./logs/console-log"
-#define CONFIG_PATH "./config.txt"
-#define WORKER_PATH "./build/worker"
-watchDir* create_dir(char* source_dir, char* target_dir){
-    watchDir* dir = malloc(sizeof(watchDir));
-    dir->source_dir = strdup(source_dir);
-    dir->target_dir = strdup(target_dir);
-    dir->active = 0;
-    dir->last_sync_time = 0;
-    dir->error_count = 0;
-    dir->next = NULL;
-    // dir->watchdesc = 0;
-    return dir;
-}
-
-/* Create a new FIFO (with error check). */
-int create_named_pipe(char *name){
-    if(mkfifo(name, 0777) == -1){
-        if (errno != EEXIST){
-            printf("Could not create fifo file\n");
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/* Write formatted output to stream & to stdout. */
-void printf_fprintf(FILE* stream, char* format, ...){
-    va_list ap;
-    va_start(ap, format);
-    vprintf(format, ap);
-    va_end(ap);
-
-    va_start(ap, format);
-    vfprintf(stream, format, ap);
-    va_end(ap);
-}
-
-/* If return is 1, path doesn't exist.  
-   If return is 0, path exists.  */
-int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
-    struct stat st;
-    if(stat(path, &st) != 0) {
-        // fprintf(stderr,"Directory %s doesn't exist.\n", path);
-        return 1;
-    } else {
-        // fprintf(stdout,"All good with %s.\n", path);
-        return 0;
-    }
-}
+#include "utility.h"
+#include "manager_coms.h"
 
 // global variables
 int active_workers;
@@ -252,17 +201,14 @@ int main(int argc, char* argv[]){
 
 
     while (1) { 
-        int ret = poll(fds, 2, -1);
-        // if (ret == -1) {
-        //     break;
-        // }
+        poll(fds, 2, -1);
 
         if (fds[0].revents & POLLIN) {
             ssize_t numRead = read(inotify_fd, buffer, sizeof(buffer));
 
             for (char* p = buffer; p < buffer + numRead;){
                 struct inotify_event* event = (struct inotify_event *) p;
-    
+                // Μετέπειτα αλλαγές στο συγχρονίζονται σε πραγµατικό χρόνο !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOT IMPLEMENTED
                 if (event->len > 0) {
                     if (event->mask & IN_CREATE)
                         printf("IN_CREATE: %s\n", event->name);
@@ -279,6 +225,23 @@ int main(int argc, char* argv[]){
             ssize_t r = read(fss_in, buffer, sizeof(buffer) - 1);
             if (r > 0) {
                 printf("[COMMAND] Received: %s\n", buffer);
+         
+                char* command = strtok(buffer," ");
+                char* source = strtok(NULL," ");
+                char* target = strtok(NULL," ");
+                
+                if (strcmp(command, "add") == 0) {
+                    manager_add(source, target, inotify_fd, table);
+                } else if (strcmp(command, "cancel") == 0) {
+
+                } else if (strcmp(command, "status") == 0) {
+                    
+                } else if (strcmp(command, "sync") == 0) {
+                    
+                } else {
+                    break;
+                }
+
                 // handle the command recieved.
             } else if (r == 0) {
                 close(fss_in);

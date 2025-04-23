@@ -10,6 +10,14 @@
         "signal.h": "c",
         "time.h": "c",
         "stat.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "string.h": "c",
+        "manager_coms.h": "c",
+        "inotify.h": "c",
+        "stdarg.h": "c",
+        "fcntl.h": "c",
+        "unistd.h": "c",
+        "utility.h": "c",
+        "locale_t.h": "c"
     }
 }
