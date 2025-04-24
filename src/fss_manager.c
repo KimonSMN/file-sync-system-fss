@@ -56,6 +56,11 @@ void handler(){ // SIGCHLD
                 int manager_fd = open(MANAGER_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0777);
                 write(manager_fd, buffer, strlen(buffer)) ;
 
+                watchDir* found = find_watchDir(table, job->source_dir);
+                if (found != NULL) {
+                    found->last_sync_time = time(NULL);
+                }
+
                 destroy_node(job);
             }
         }
@@ -143,6 +148,7 @@ int main(int argc, char* argv[]){
             curr->active = 1; // set current directory to active (we are watching it). 
             // Start watching directory.
             curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_CREATE | IN_MODIFY | IN_DELETE);
+            curr->last_sync_time = time(NULL);
 
 
             if (active_workers < worker_count){
@@ -171,8 +177,7 @@ int main(int argc, char* argv[]){
                     printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
                         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
                         source_dir);
-                    
-
+    
                 } else {
                     perror("Error fork Failed.");
                 }

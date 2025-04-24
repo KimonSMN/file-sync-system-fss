@@ -128,17 +128,26 @@ int manager_status(char* source, hashTable* table){
     struct tm tm = *localtime(&t);
 
     watchDir* found = find_watchDir(table, source);
-    if (found == NULL || found->active == 0) { // directory not active OR doesn't exist.
+    if (found == NULL) { // directory doesn't exist.
         printf("[%d-%02d-%02d %02d:%02d:%02d] Directory not monitored: %s\n",
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
             source);
         return 1;
     }
 
-    printf("[%d-%02d-%02d %02d:%02d:%02d] Status requested for %s\nDirectory: %s\nTarget: %s\nLast Sync: %ld\nErrors: %d\nStatus: %s\n",
+    struct tm last_sync = *localtime(&found->last_sync_time);
+
+    printf("[%d-%02d-%02d %02d:%02d:%02d] Status requested for %s\nDirectory: %s\nTarget: %s\n",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-        found->source_dir, found->source_dir, found->target_dir, found->last_sync_time, found->error_count, found->active ? "Active":"Inactive");
+        found->source_dir, found->source_dir, found->target_dir);
 
+    if (found->last_sync_time == 0) {
+        printf("Last Sync: ---\n");
+    } else {
+        printf("Last Sync: %d-%02d-%02d %02d:%02d:%02d\n",
+            last_sync.tm_year + 1900, last_sync.tm_mon + 1, last_sync.tm_mday, last_sync.tm_hour, last_sync.tm_min, last_sync.tm_sec);
+    }    
 
+    printf("Errors: %d\nStatus: %s\n",found->error_count, found->active ? "Active":"Inactive");
     return 0;
 }
