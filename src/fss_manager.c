@@ -22,9 +22,8 @@
 #include "utility.h"
 #include "manager_coms.h"
 
-// global variables
-int active_workers;
-queue* q;
+#include "globals.h"
+
 
 void handler(){ // SIGCHLD
     // This signal is sent to a parent process whenever one of its child processes terminates or stops.
@@ -45,6 +44,8 @@ void handler(){ // SIGCHLD
                 execvp(args[0], args);
 
             } else if(pid > 0) { // parent
+                active_workers++;
+
                 char buffer[1024];
                 snprintf(buffer, sizeof(buffer),"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n"
                                 "[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n",
@@ -54,7 +55,6 @@ void handler(){ // SIGCHLD
                 write(STDOUT_FILENO,buffer, strlen(buffer));
                 int manager_fd = open(MANAGER_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0777);
                 write(manager_fd, buffer, strlen(buffer)) ;
-                active_workers++;
 
                 destroy_node(job);
             }
@@ -68,7 +68,6 @@ int main(int argc, char* argv[]){
     signal(SIGCHLD, handler);
 
     char* manager_log, *config_file;
-    int worker_count = MAX_WORKERS;   // default value is 5 if not specified.
     active_workers = 0;
 
     // Flags
@@ -97,7 +96,7 @@ int main(int argc, char* argv[]){
     }
 
     // Initialize hash table.
-    hashTable* table = init_hash_table();
+    table = init_hash_table();
 
     // Initialize Queue.
     q = init_queue();
@@ -105,13 +104,13 @@ int main(int argc, char* argv[]){
     // Read config file
     FILE *fp = fopen(CONFIG_PATH, "r");
     if (!fp) {
-        perror("Failed to open file");
+        perror("Error opening file.");
         return 1;
     }
 
     FILE *mlfp = fopen(MANAGER_LOG_PATH, "w");
     if (!mlfp) {
-        perror("Failed to open file");
+        perror("Error opening file.");
         return 1;
     }
 
@@ -132,7 +131,7 @@ int main(int argc, char* argv[]){
                 strcpy(target_dir, token);
             } else {
                 target_dir[0] = '\0';
-                perror("Problem in Config file");
+                perror("Error with <source> <target> in Config file.");
             }
         }
         // Inserts Valid Directories to hashtable
@@ -141,6 +140,11 @@ int main(int argc, char* argv[]){
             watchDir* curr = create_dir(source_dir, target_dir);    // Creates directory
             insert_watchDir(table, curr);                           // Inserts to table
             
+            curr->active = 1; // set current directory to active (we are watching it). 
+            // Start watching directory.
+            curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_CREATE | IN_MODIFY | IN_DELETE);
+
+
             if (active_workers < worker_count){
                 
                 pid_t pid = fork(); 
@@ -151,7 +155,7 @@ int main(int argc, char* argv[]){
                     execvp(args[0], args);
 
                     // If exec fails
-                    perror("execvp failed");
+                    perror("Error execvp Failed.");
                 } else if (pid > 0) {
                     // Parent process
 
@@ -168,13 +172,9 @@ int main(int argc, char* argv[]){
                         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
                         source_dir);
                     
-                    curr->active = 1; // set current directory to active (we are watching it). 
-
-                    // Start watching directory.
-                    curr->watchdesc = inotify_add_watch(inotify_fd, source_dir, IN_CREATE | IN_MODIFY | IN_DELETE);
 
                 } else {
-                    perror("fork failed");
+                    perror("Error fork Failed.");
                 }
             } else { // If active workers > 5
                 // Add to queue.
@@ -223,20 +223,34 @@ int main(int argc, char* argv[]){
         if (fds[1].revents & POLLIN) {
             ssize_t r = read(fss_in, buffer, sizeof(buffer) - 1);
             if (r > 0) {
-                printf("[COMMAND] Received: %s\n", buffer);
          
                 char* command = strtok(buffer," ");
                 char* source = strtok(NULL," ");
                 char* target = strtok(NULL," ");
                 
                 if (strcmp(command, "add") == 0) {
-                    manager_add(source, target, inotify_fd, table, active_workers, worker_count, q);
+                    manager_add(source, target, inotify_fd, table, q);
                 } else if (strcmp(command, "cancel") == 0) {
-
+                    manager_cancel(source,inotify_fd, table);
                 } else if (strcmp(command, "status") == 0) {
-                    
+                    watchDir* tmp = find_watchDir(table,source);
+                    if(tmp == NULL) {
+                        printf("TEMP IS NULL\n");
+                    }
+                    printf("TEMP ACTIVE IS: %d\n",tmp->active);
                 } else if (strcmp(command, "sync") == 0) {
-                    
+                    print_hash_table(table);
+                    printf("📂 Active inotify watches:\n");
+
+                    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+                        watchDir* curr = table->buckets[i];
+                        while (curr) {
+                            if (curr->active && curr->watchdesc >= 0) {
+                                printf("  [%d] Watching: %s -> %s\n", curr->watchdesc, curr->source_dir, curr->target_dir);
+                            }
+                            curr = curr->next;
+                        }
+                    }
                 } else {
                     break;
                 }

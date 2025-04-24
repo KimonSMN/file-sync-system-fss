@@ -15,30 +15,27 @@ SYNC_SRC = $(SRC_DIR)/sync_info_mem_store.c
 QUEUE_SRC = $(SRC_DIR)/queue.c 
 COMS_SRC = $(SRC_DIR)/manager_coms.c 
 UTILITY_SRC = $(SRC_DIR)/utility.c 
+GLOBAL_SRC = $(SRC_DIR)/globals.c
 
 # Output binaries
 MANAGER_BIN = $(BUILD_DIR)/fss_manager
 CONSOLE_BIN = $(BUILD_DIR)/fss_console
 WORKER_BIN = $(BUILD_DIR)/worker
-COMS_BIN = $(BUILD_DIR)/manager_coms
-UTILITY_BIN = $(BUILD_DIR)/utility
 
 # Default target
 all: $(MANAGER_BIN) $(CONSOLE_BIN) $(WORKER_BIN)
 
 # Build manager
-$(MANAGER_BIN): $(MANAGER_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) 
+$(MANAGER_BIN): $(MANAGER_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) $(GLOBAL_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 # Build console
-$(CONSOLE_BIN): $(CONSOLE_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) 
+$(CONSOLE_BIN): $(CONSOLE_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) $(GLOBAL_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 # Build worker
-$(WORKER_BIN): $(WORKER_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) 
+$(WORKER_BIN): $(WORKER_SRC) $(SYNC_SRC) $(QUEUE_SRC) $(COMS_SRC) $(UTILITY_SRC) $(GLOBAL_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
-
-
 
 # Clean up
 clean:

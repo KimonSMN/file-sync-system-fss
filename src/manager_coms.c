@@ -12,44 +12,57 @@
 #include "sync_info_mem_store.h"
 #include "queue.h"
 
+#include "globals.h"
+
 /*                           Εντολές που µπορεί να δεχθεί ο fss_manager                         */
 
-
-// ξεκινά άµεσα τον συγχρονισµό των περιεχοµένων του στον κατάλογο <target>. !!!!!!!!!!!!!! NOT DONE
-
-int manager_add(char* source, char* target, int inotify_fd, hashTable* table, int active_workers, int worker_count, queue* q){
-    watchDir* found = find_watchDir(table,source);
-    
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-
+int manager_add(char* source, char* target, int inotify_fd, hashTable* table, queue* q){
+    watchDir* found = find_watchDir(table,source);  // Try to find source directory.
     if (found != NULL) {
-        if (strcmp(found->source_dir, source) == 0 && strcmp(found->target_dir, target) == 0) {
-            printf("[%d-%02d-%02d %02d:%02d:%02d] Already in queue: %s\n",
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                source);
-            return 0;
+        if (strcmp(found->target_dir, target) != 0) {   // If the found->target_dir (original) isn't the same as the one passed, return 1 since we want one to one pair.
+            printf("%s is already has a pair \n", source);
+            return 1;
         }
     }
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);  
+
+    if (found != NULL && strcmp(found->source_dir, source) == 0 && strcmp(found->target_dir, target) == 0) {    // If source directory already exists.
+        printf("[%d-%02d-%02d %02d:%02d:%02d] Already in queue: %s\n",                      // Print the message.
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+            source);
+        return 0;
+    }
+
+    if (found == NULL) {                    // If not found.
+        found = create_dir(source, target); // Create it.
+        insert_watchDir(table, found);      // Insert it to hashtable.
+        found->watchdesc = inotify_add_watch(inotify_fd, source, IN_CREATE | IN_MODIFY | IN_DELETE);
+        if (found->watchdesc == -1) {
+            perror("Error adding inotify_watch.");
+        } else {
+            found->active = 1;
+        }
+        
+    } 
     
-    found = create_dir(source, target);
-    insert_watchDir(table, found);
-    
-    FILE *fp = fopen(MANAGER_LOG_PATH, "a");
+    // If the source directory was NULL and we created it.
+    FILE *fp = fopen(MANAGER_LOG_PATH, "a");    // Open the manager-log-file.
     if (!fp) {
-        perror("Failed to open file");
+        perror("Error opening File.");
         return 1;
     }
     
-    if (active_workers < worker_count) {
+
+    if (active_workers < worker_count) {        // If there are available workers.
         pid_t pid = fork();
 
-        if (pid == 0) {
-            char *args[] = {WORKER_PATH, source, target, "ALL", "FULL", NULL};
+        if (pid == 0) { // Child process.
+            char *args[] = {WORKER_PATH, source, target, "ALL", "FULL", NULL};  // Full Sync.
             execvp(args[0], args);
 
-            perror("execvp failed");
-        } else if (pid > 0) {
+            perror("Error execvp Failed.");
+        } else if (pid > 0) { // Parent process.
             active_workers++;
 
             printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
@@ -59,12 +72,11 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, in
                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
                 source);
 
-            found->active = 1;
-            found->watchdesc = inotify_add_watch(inotify_fd, source, IN_CREATE | IN_MODIFY | IN_DELETE);
+
         } else {
-            perror("fork failed");
+            perror("Error fork Failed.");
         }
-    } else {
+    } else {    // If no available workers.
         node* job = init_node(source, target, "ALL", "FULL");
         enqueue(q, job);
         printf("JOB [%s -> %s] QUEUED\n", source, target);
@@ -72,4 +84,45 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, in
 
     fclose(fp);
     return 0;
+}
+
+// Ακυρώνει την παρακολούθηση του καταλόγου <source dir>: OK!
+// Τυπώνει στην οθόνη και γράφει στο manager-log-file 
+// [2025-02-10 10:23:01] Monitoring stopped for /home/user/docs
+// Αν ο κατάλογος δεν παρακολουθείται τότε:
+// Τυπώνει στην οθόνη µόνο
+// [2025-02-10 10:00:01] Directory not monitored: /home/user/docs ok
+
+int manager_cancel(char* source, int inotify_fd, hashTable* table){
+    watchDir* found = find_watchDir(table, source); 
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    if (found == NULL || found->active == 0) {   // If Not watched.
+        printf("[%d-%02d-%02d %02d:%02d:%02d] Directory not monitored: %s\n",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+            source); 
+        return 0;
+    }
+    if(inotify_rm_watch(inotify_fd, found->watchdesc) == 0) {   // Success returns zero.
+        
+        FILE *fp = fopen(MANAGER_LOG_PATH, "a");    // Open the manager-log-file.
+        if (!fp) {
+            perror("Error opening File.");
+            return 1;
+        }
+
+        found->active = 0; // set to not watch it.
+        
+        printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring stopped for: %s\n",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+            source);
+    
+        fclose(fp);
+        return 0;
+    } else {
+        perror("Error inotify_remove Failed.");
+    }
+    return 1;
 }

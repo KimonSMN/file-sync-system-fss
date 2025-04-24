@@ -18,6 +18,9 @@
         "fcntl.h": "c",
         "unistd.h": "c",
         "utility.h": "c",
-        "locale_t.h": "c"
+        "locale_t.h": "c",
+        "globals_h": "c",
+        "globals.h": "c",
+        "poll.h": "c"
     }
 }
