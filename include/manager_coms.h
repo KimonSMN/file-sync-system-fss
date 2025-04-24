@@ -7,4 +7,7 @@
 int manager_add(char* source, char* target, int inotify_fd, hashTable* table, queue* q);
 
 int manager_cancel(char* source, int inotify_fd, hashTable* table);
+
+int manager_status(char* source, hashTable* table);
+
 #endif

@@ -65,7 +65,7 @@ void handler(){ // SIGCHLD
 
 int main(int argc, char* argv[]){
 
-    signal(SIGCHLD, handler);
+    signal(SIGCHLD, handler); //volatile sig_atomic_t maybe need to use this here?
 
     char* manager_log, *config_file;
     active_workers = 0;
@@ -233,11 +233,7 @@ int main(int argc, char* argv[]){
                 } else if (strcmp(command, "cancel") == 0) {
                     manager_cancel(source,inotify_fd, table);
                 } else if (strcmp(command, "status") == 0) {
-                    watchDir* tmp = find_watchDir(table,source);
-                    if(tmp == NULL) {
-                        printf("TEMP IS NULL\n");
-                    }
-                    printf("TEMP ACTIVE IS: %d\n",tmp->active);
+                    manager_status(source, table);
                 } else if (strcmp(command, "sync") == 0) {
                     print_hash_table(table);
                     printf("📂 Active inotify watches:\n");

@@ -13,7 +13,6 @@
 typedef struct watchDir{
     char* source_dir;       // Source directory Path.
     char* target_dir;       // Target directory Path.
-    //status;               // ?
     time_t last_sync_time;  // Time of last sync.
     int active;             // 1 watching, 0 nothing
     int error_count;        // Number of errors occured during sync
