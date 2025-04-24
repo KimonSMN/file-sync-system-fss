@@ -10,4 +10,6 @@ int manager_cancel(char* source, int inotify_fd, hashTable* table);
 
 int manager_status(char* source, hashTable* table);
 
+int manager_sync(char* source, hashTable* table,int inotify_fd);
+
 #endif

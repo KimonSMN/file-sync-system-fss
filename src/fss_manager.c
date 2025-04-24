@@ -240,18 +240,7 @@ int main(int argc, char* argv[]){
                 } else if (strcmp(command, "status") == 0) {
                     manager_status(source, table);
                 } else if (strcmp(command, "sync") == 0) {
-                    print_hash_table(table);
-                    printf("📂 Active inotify watches:\n");
-
-                    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
-                        watchDir* curr = table->buckets[i];
-                        while (curr) {
-                            if (curr->active && curr->watchdesc >= 0) {
-                                printf("  [%d] Watching: %s -> %s\n", curr->watchdesc, curr->source_dir, curr->target_dir);
-                            }
-                            curr = curr->next;
-                        }
-                    }
+                    manager_sync(source, table, inotify_fd);
                 } else {
                     break;
                 }

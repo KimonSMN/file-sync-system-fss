@@ -128,7 +128,7 @@ int manager_status(char* source, hashTable* table){
     struct tm tm = *localtime(&t);
 
     watchDir* found = find_watchDir(table, source);
-    if (found == NULL) { // directory doesn't exist.
+    if (found == NULL) { // ότι δεν είχε παρακολουθηθεί ποτέ και άρα δεν βρίσκεται στη δομή μας @82
         printf("[%d-%02d-%02d %02d:%02d:%02d] Directory not monitored: %s\n",
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
             source);
@@ -149,5 +149,64 @@ int manager_status(char* source, hashTable* table){
     }    
 
     printf("Errors: %d\nStatus: %s\n",found->error_count, found->active ? "Active":"Inactive");
+    return 0;
+}
+
+int manager_sync(char* source, hashTable* table,int inotify_fd) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    watchDir* found = find_watchDir(table, source);
+    if (found == NULL) {    /// THERE IS NOTHING MENTIONED HERE ABOUT WAHT TO PRINT
+        printf("[%d-%02d-%02d %02d:%02d:%02d] Directory not monitored: %s\n",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+            source);
+        return 1;
+    }
+
+    char* target = found->target_dir;
+    
+    FILE *fp = fopen(MANAGER_LOG_PATH, "a");
+    if (!fp) {
+        perror("Error opening file.");
+        return 1;
+    }
+
+    if (active_workers < worker_count){     
+        pid_t pid = fork(); 
+
+        if (pid == 0) {
+            // Child process
+            char *args[] = {WORKER_PATH, source, target, "ALL", "FULL", NULL};  // FULL SYNC
+            execvp(args[0], args);
+            // If exec fails
+            perror("Error execvp Failed.");
+        } else if (pid > 0) {
+            // Parent process
+            active_workers++;   // Increase worker count.
+           
+            printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Syncing directory: %s -> %s\n",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                source, target);
+       
+            found->active = 1; // μπορειτε το θεωρειτε το "syncing directory ..."  ισοδυναμο του "Monitoring started". @106
+            found->last_sync_time = time(NULL);
+            found->watchdesc = inotify_add_watch(inotify_fd, source, IN_CREATE | IN_MODIFY | IN_DELETE);
+
+            // THIS HAS TO BE MOVED ONCE THE WORKER FINISHES HIS JOB.
+            // ASLO HAVE TO ADD A SYNCING VAR FOR EVERY DIRECTORY TO CHECK IF IT IS CURRENTLY SYNCING.
+            // printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Sync completed: %s -> %s Errors: %d\n", 
+            //     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+            //     source,target, found->error_count);
+
+        } else {
+            perror("Error fork Failed.");
+        }
+    } else { // If active workers > 5
+        // Add to queue.
+        node* job = init_node(source, target, "ALL", "FULL");
+        printf("JOB [%s -> %s] QUEUED\n", source, target);
+        enqueue(q, job);
+    }
     return 0;
 }
