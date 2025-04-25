@@ -44,7 +44,7 @@ int copy_file(char* path_from, char* path_to ){
             ssize_t bytesRead;
             while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0) {
                 if (write(target_fd, buffer, bytesRead) != bytesRead) {
-                    perror("Write failed");
+                    perror("Copy failed.");
                     break;
                 }
             }
@@ -66,7 +66,6 @@ int add_file(char* source, char* target, char* filename) {
 
         int source_fd = open(path, O_RDONLY); // Open source File.
         if (source_fd == -1) {
-            close(source_fd);
             return 1;
         }
 
@@ -77,7 +76,6 @@ int add_file(char* source, char* target, char* filename) {
   
         int target_fd = open(path2, O_WRONLY | O_CREAT, 0777); // Open target file.
         if (target_fd == -1) {
-            close(target_fd);
             return 1;
         }
         
@@ -85,7 +83,7 @@ int add_file(char* source, char* target, char* filename) {
         ssize_t bytesRead;
         while ((bytesRead = read(source_fd, buffer, sizeof(buffer))) > 0) {
             if (write(target_fd, buffer, bytesRead) != bytesRead) {
-                perror("Write failed");
+                perror("Write failed.");
                 close(source_fd); 
                 close(target_fd);
                 break;
@@ -119,7 +117,7 @@ int modify_file(char* source, char* target, char* filename) {
     ssize_t bytesRead;
     while ((bytesRead = read(source_fd, buffer, sizeof(buffer))) > 0) {
         if (write(target_fd, buffer, bytesRead) != bytesRead) {
-            perror("Write failed");
+            perror("Modify failed.");
             break;
         }
     }
@@ -134,11 +132,10 @@ int delete_file(char* source, char* target, char* filename) {
     strcat(path2, "/");
     strcat(path2, filename);
 
-    int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777); // Open target file.
-    if (target_fd == -1)
+    if (unlink(path2) != 0) {
+        perror("Delete failed.");
         return 1;
-
-    unlink(path2);
+    }
     return 0;
 }
 
@@ -165,7 +162,6 @@ int main(int argc, char* argv[]){
         sleep(2);
         delete_file(argv[1], argv[2], argv[3]);
     }
-    //open, read, write, unlink, close
 
     return 0;
 }
