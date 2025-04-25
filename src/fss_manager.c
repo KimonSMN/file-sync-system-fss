@@ -30,8 +30,7 @@ void handler(){ // SIGCHLD
         
     int status;
     node* job;
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    struct tm tm = get_time();
     watchDir* found;
 
     while((waitpid(-1, &status, WNOHANG)) > 0 ) {
@@ -154,36 +153,8 @@ int main(int argc, char* argv[]){
 
             if (active_workers < worker_count){
                 
-                pid_t pid = fork(); 
-        
-                if (pid == 0) {
-                    // Child process
-                    char *args[] = {WORKER_PATH, source_dir, target_dir, "ALL", "FULL", NULL};
-                    execvp(args[0], args);
+                spawn_worker(curr->source_dir,curr->target_dir, mlfp, "ALL", "FULL");
 
-                    // If exec fails
-                    perror("Error execvp Failed.");
-                    exit(1);
-                } else if (pid > 0) {
-                    // Parent process
-
-                    active_workers++;   // Increase worker count.
-
-                    // Print messages
-                    time_t t = time(NULL);
-                    struct tm tm = *localtime(&t);
-
-                    printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
-                        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                        source_dir, target_dir);
-                    printf_fprintf(mlfp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
-                        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                        source_dir);
-    
-                } else {
-                    perror("Error fork Failed.");
-                    exit(1);
-                }
             } else { // If active workers > 5
                 // Add to queue.
                 node* job = init_node(source_dir, target_dir, "ALL", "FULL");
@@ -233,23 +204,15 @@ int main(int argc, char* argv[]){
                         opt = "DELETED";
                     }
 
-                    pid_t pid = fork();
-
-                    if (pid == 0) {
-                        // Child process
-                        char *args[] = {WORKER_PATH, found->source_dir, found->target_dir, event->name, opt, NULL};
-                        execvp(args[0], args);
-
-                        // If exec fails
-                        perror("Error execvp Failed.");
-                        exit(1);
-                    } else if (pid > 0) {
-                        // Parent process
-                        active_workers++;   // Increase worker count.
+                    // We still have to check if there are available workers
+                    if (active_workers < worker_count){
+                
+                        spawn_worker(found->source_dir, found->target_dir, NULL, event->name, opt);
         
-                    } else {
-                        perror("Error fork Failed.");
-                        exit(1);
+                    } else { // If active workers > 5
+                        // Add to queue.
+                        node* job = init_node(source_dir, target_dir, event->name, opt);
+                        enqueue(q, job);
                     }
                 }
                 p += sizeof(struct inotify_event) + event->len;

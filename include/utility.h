@@ -17,5 +17,11 @@ void printf_fprintf(FILE* stream, char* format, ...);
    If return is 0, path exists.  */
 int check_dir(const char *path);
 
+/* Return 0 if worker successfuly spawned.
+   Return -1 if something went wrong. 
+   Set manager_file_pointer to NULL in order not to print a message.*/
+int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* event_name, char* operation);
+
+struct tm get_time();
 
 #endif

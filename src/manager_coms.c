@@ -12,7 +12,6 @@
 #include "utility.h"
 #include "sync_info_mem_store.h"
 #include "queue.h"
-
 #include "globals.h"
 
 /*                           Εντολές που µπορεί να δεχθεί ο fss_manager                         */
@@ -56,33 +55,12 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
     
 
     if (active_workers < worker_count) {        // If there are available workers.
-        pid_t pid = fork();
 
-        if (pid == 0) { // Child process.
-            char *args[] = {WORKER_PATH, source, target, "ALL", "FULL", NULL};  // Full Sync.
-            execvp(args[0], args);
+        spawn_worker(source, target, fp, "ALL", "FULL");
 
-            perror("Error execvp Failed.");
-            exit(1);
-        } else if (pid > 0) { // Parent process.
-            active_workers++;
-
-            printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                source, target);
-            printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                source);
-
-
-        } else {
-            perror("Error fork Failed.");
-            exit(1);
-        }
     } else {    // If no available workers.
         node* job = init_node(source, target, "ALL", "FULL");
         enqueue(q, job);
-        printf("JOB [%s -> %s] QUEUED\n", source, target);
     }
 
     fclose(fp);
@@ -93,8 +71,7 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
 int manager_cancel(char* source, int inotify_fd, hashTable* table){
     watchDir* found = find_watchDir(table, source); 
 
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    struct tm tm = get_time();
 
     if (found == NULL || found->active == 0) {   // If Not watched.
         printf("[%d-%02d-%02d %02d:%02d:%02d] Directory not monitored: %s\n",
@@ -127,8 +104,7 @@ int manager_cancel(char* source, int inotify_fd, hashTable* table){
 
 int manager_status(char* source, hashTable* table){
     
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    struct tm tm = get_time();
 
     watchDir* found = find_watchDir(table, source);
     if (found == NULL) { // ότι δεν είχε παρακολουθηθεί ποτέ και άρα δεν βρίσκεται στη δομή μας @82
@@ -156,8 +132,8 @@ int manager_status(char* source, hashTable* table){
 }
 
 int manager_sync(char* source, hashTable* table,int inotify_fd) {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+   
+    struct tm tm = get_time();
 
     watchDir* found = find_watchDir(table, source);
     if (found == NULL) {    /// THERE IS NOTHING MENTIONED HERE ABOUT WAHT TO PRINT
@@ -235,8 +211,8 @@ int manager_shutdown(hashTable* table, int inotify_fd) {
         }
     }
 
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    struct tm tm = get_time();
+
 
     printf("[%d-%02d-%02d %02d:%02d:%02d] Shutting down manager...\n",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
@@ -254,8 +230,7 @@ int manager_shutdown(hashTable* table, int inotify_fd) {
         pause();
     }
 
-    t = time(NULL);
-    tm = *localtime(&t);
+    tm = get_time();
 
     printf("[%d-%02d-%02d %02d:%02d:%02d] Manager shutdown complete.\n",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
