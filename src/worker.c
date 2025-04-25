@@ -59,30 +59,35 @@ int copy_file(char* path_from, char* path_to ){
 
 
 int add_file(char* source, char* target, char* filename) {
-       // Opens Source Directory.
-       DIR* target_dir = opendir(target);
-       if (target_dir == NULL) // If Null return 1.
-           return 1;
-
         char path[100] = { 0 };
         strcat(path, source);
         strcat(path, "/");
         strcat(path, filename);
 
         int source_fd = open(path, O_RDONLY); // Open source File.
-        if (source_fd == -1)
+        if (source_fd == -1) {
+            close(source_fd);
             return 1;
+        }
 
         char path2[100] = { 0 };
         strcat(path2, target);
         strcat(path2, "/");
         strcat(path2, filename);
-        int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777); // Open target file.
+  
+        int target_fd = open(path2, O_WRONLY | O_CREAT, 0777); // Open target file.
+        if (target_fd == -1) {
+            close(target_fd);
+            return 1;
+        }
+        
         char buffer[4096];
         ssize_t bytesRead;
         while ((bytesRead = read(source_fd, buffer, sizeof(buffer))) > 0) {
             if (write(target_fd, buffer, bytesRead) != bytesRead) {
                 perror("Write failed");
+                close(source_fd); 
+                close(target_fd);
                 break;
             }
         }
@@ -90,7 +95,52 @@ int add_file(char* source, char* target, char* filename) {
         close(target_fd);
         return 0;
 }
+int modify_file(char* source, char* target, char* filename) {
 
+    char path[100] = { 0 };
+    strcat(path, source);
+    strcat(path, "/");
+    strcat(path, filename);
+
+    int source_fd = open(path, O_RDONLY); // Open source File.
+    if (source_fd == -1)
+        return 1;
+
+    char path2[100] = { 0 };
+    strcat(path2, target);
+    strcat(path2, "/");
+    strcat(path2, filename);
+
+    int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777); // Open target file.
+    if (target_fd == -1)
+        return 1;
+
+    char buffer[4096];
+    ssize_t bytesRead;
+    while ((bytesRead = read(source_fd, buffer, sizeof(buffer))) > 0) {
+        if (write(target_fd, buffer, bytesRead) != bytesRead) {
+            perror("Write failed");
+            break;
+        }
+    }
+    close(source_fd); 
+    close(target_fd);
+    return 0;
+}
+
+int delete_file(char* source, char* target, char* filename) {
+    char path2[100] = { 0 };
+    strcat(path2, target);
+    strcat(path2, "/");
+    strcat(path2, filename);
+
+    int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777); // Open target file.
+    if (target_fd == -1)
+        return 1;
+
+    unlink(path2);
+    return 0;
+}
 
 
 int main(int argc, char* argv[]){
@@ -106,6 +156,15 @@ int main(int argc, char* argv[]){
         add_file(argv[1], argv[2], argv[3]);
     }
 
+    if(strcmp(argv[4], "MODIFIED") == 0){
+        sleep(2);
+        modify_file(argv[1], argv[2], argv[3]);
+    }
+
+    if(strcmp(argv[4], "DELETED") == 0){
+        sleep(2);
+        delete_file(argv[1], argv[2], argv[3]);
+    }
     //open, read, write, unlink, close
 
     return 0;
