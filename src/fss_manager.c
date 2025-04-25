@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if (manager_log == NULL || config_file == NULL || worker_count < 2) {
+    if (manager_log == NULL || config_file == NULL || worker_count < MAX_WORKERS) {
         printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_count>\n");
         return 1;
     }
@@ -216,12 +216,41 @@ int main(int argc, char* argv[]){
                 struct inotify_event* event = (struct inotify_event *) p;
                 // Μετέπειτα αλλαγές στο συγχρονίζονται σε πραγµατικό χρόνο !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOT IMPLEMENTED
                 if (event->len > 0) {
-                    if (event->mask & IN_CREATE)
+                    watchDir* found = find_watchDir_wd(table, event->wd);
+                    if (found == NULL) {
+                        p += sizeof(struct inotify_event) + event->len;
+                        continue;
+                    }
+                    char* opt;
+                    if (event->mask & IN_CREATE) {
                         printf("IN_CREATE: %s\n", event->name);
-                    else if (event->mask & IN_MODIFY)
+                        opt = "ADDED";
+                    } else if (event->mask & IN_MODIFY) {
                         printf("IN_MODIFY: %s\n", event->name);
-                    else if (event->mask & IN_DELETE)
+                        opt = "MODIFIED";
+                    } else if (event->mask & IN_DELETE) {
                         printf("IN_DELETE: %s\n", event->name);
+                        opt = "DELETED";
+                    }
+
+                    pid_t pid = fork();
+
+                    if (pid == 0) {
+                        // Child process
+                        char *args[] = {WORKER_PATH, found->source_dir, found->target_dir, event->name, opt, NULL};
+                        execvp(args[0], args);
+
+                        // If exec fails
+                        perror("Error execvp Failed.");
+                        exit(1);
+                    } else if (pid > 0) {
+                        // Parent process
+                        active_workers++;   // Increase worker count.
+        
+                    } else {
+                        perror("Error fork Failed.");
+                        exit(1);
+                    }
                 }
                 p += sizeof(struct inotify_event) + event->len;
             }

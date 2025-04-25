@@ -139,3 +139,15 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     dir->watchdesc = 0;
     return dir;
 }
+
+watchDir* find_watchDir_wd(hashTable* table, int watchdesc) {
+    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+        watchDir* curr = table->buckets[i];
+        while (curr != NULL) {
+            if (curr->watchdesc == watchdesc)
+                return curr;
+            curr = curr->next;
+        }
+    }
+    return NULL;
+}

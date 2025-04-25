@@ -58,8 +58,42 @@ int copy_file(char* path_from, char* path_to ){
 }
 
 
+int add_file(char* source, char* target, char* filename) {
+       // Opens Source Directory.
+       DIR* target_dir = opendir(target);
+       if (target_dir == NULL) // If Null return 1.
+           return 1;
+
+        char path[100] = { 0 };
+        strcat(path, source);
+        strcat(path, "/");
+        strcat(path, filename);
+
+        int source_fd = open(path, O_RDONLY); // Open source File.
+        if (source_fd == -1)
+            return 1;
+
+        char path2[100] = { 0 };
+        strcat(path2, target);
+        strcat(path2, "/");
+        strcat(path2, filename);
+        int target_fd = open(path2, O_WRONLY | O_CREAT | O_TRUNC, 0777); // Open target file.
+        char buffer[4096];
+        ssize_t bytesRead;
+        while ((bytesRead = read(source_fd, buffer, sizeof(buffer))) > 0) {
+            if (write(target_fd, buffer, bytesRead) != bytesRead) {
+                perror("Write failed");
+                break;
+            }
+        }
+        close(source_fd); 
+        close(target_fd);
+        return 0;
+}
+
+
+
 int main(int argc, char* argv[]){
-    // printf("Goodmorning, I am worker: %d. I am assigned to watch %s -> %s\n", getpid(), argv[1], argv[2]);
     // FULL, ADDED, MODIFIED, DELETED
 
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
@@ -67,7 +101,10 @@ int main(int argc, char* argv[]){
         copy_file(argv[1], argv[2]);   // FULL SYNC
     }
 
-
+    if(strcmp(argv[4], "ADDED") == 0){
+        sleep(2);
+        add_file(argv[1], argv[2], argv[3]);
+    }
 
     //open, read, write, unlink, close
 
