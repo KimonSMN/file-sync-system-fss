@@ -21,6 +21,7 @@
         "locale_t.h": "c",
         "globals_h": "c",
         "globals.h": "c",
-        "poll.h": "c"
+        "poll.h": "c",
+        "wait.h": "c"
     }
 }

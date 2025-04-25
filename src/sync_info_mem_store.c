@@ -136,6 +136,6 @@ watchDir* create_dir(char* source_dir, char* target_dir){
     dir->last_sync_time = 0;
     dir->error_count = 0;
     dir->next = NULL;
-    // dir->watchdesc = 0;
+    dir->watchdesc = 0;
     return dir;
 }

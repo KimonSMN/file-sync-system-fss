@@ -32,10 +32,11 @@ void handler(){ // SIGCHLD
     node* job;
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    
+    watchDir* found;
+
     while((waitpid(-1, &status, WNOHANG)) > 0 ) {
         active_workers--;
-        if(isEmpty(q) == 0) {    // if the queue isn't empty.
+        if(isEmpty(q) == 0) { // if the queue isn't empty.
             job = dequeue(q); // remove the worker from it.
         
             pid_t pid = fork(); // new worker
@@ -56,7 +57,7 @@ void handler(){ // SIGCHLD
                 int manager_fd = open(MANAGER_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0777);
                 write(manager_fd, buffer, strlen(buffer)) ;
 
-                watchDir* found = find_watchDir(table, job->source_dir);
+                found = find_watchDir(table, job->source_dir);
                 if (found != NULL) {
                     found->last_sync_time = time(NULL);
                 }
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if (manager_log == NULL || config_file == NULL || worker_count < MAX_WORKERS) {
+    if (manager_log == NULL || config_file == NULL || worker_count < 2) {
         printf("Usage: ./fss_manager -l <manager_logfile> -c <config_file> -n <worker_count>\n");
         return 1;
     }
@@ -162,6 +163,7 @@ int main(int argc, char* argv[]){
 
                     // If exec fails
                     perror("Error execvp Failed.");
+                    exit(1);
                 } else if (pid > 0) {
                     // Parent process
 
@@ -180,11 +182,11 @@ int main(int argc, char* argv[]){
     
                 } else {
                     perror("Error fork Failed.");
+                    exit(1);
                 }
             } else { // If active workers > 5
                 // Add to queue.
                 node* job = init_node(source_dir, target_dir, "ALL", "FULL");
-                printf("JOB [%s -> %s] QUEUED\n", source_dir, target_dir);
                 enqueue(q, job);
             }
         }
@@ -242,6 +244,7 @@ int main(int argc, char* argv[]){
                 } else if (strcmp(command, "sync") == 0) {
                     manager_sync(source, table, inotify_fd);
                 } else {
+                    manager_shutdown(table,inotify_fd);
                     break;
                 }
 

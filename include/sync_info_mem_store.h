@@ -16,9 +16,8 @@ typedef struct watchDir{
     time_t last_sync_time;  // Time of last sync.
     int active;             // 1 watching, 0 nothing
     int error_count;        // Number of errors occured during sync
-
     int watchdesc;          // watch descriptor.
-
+    // int syncing;            // flag for syncing // NOT IMPLEMENTED
     struct watchDir* next;  // Seperate chaining
 } watchDir;
 

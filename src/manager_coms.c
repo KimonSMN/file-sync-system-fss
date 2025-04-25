@@ -6,6 +6,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "manager_coms.h"
 #include "utility.h"
@@ -62,6 +63,7 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
             execvp(args[0], args);
 
             perror("Error execvp Failed.");
+            exit(1);
         } else if (pid > 0) { // Parent process.
             active_workers++;
 
@@ -75,6 +77,7 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
 
         } else {
             perror("Error fork Failed.");
+            exit(1);
         }
     } else {    // If no available workers.
         node* job = init_node(source, target, "ALL", "FULL");
@@ -164,6 +167,14 @@ int manager_sync(char* source, hashTable* table,int inotify_fd) {
         return 1;
     }
 
+    // NOT IMPLEMENTED
+    // if (found->syncing == 1) {  // If already syncing:
+    //     printf("[%d-%02d-%02d %02d:%02d:%02d] Sync already in progress %s\n", 
+    //         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+    //         found->source_dir);
+    //     return 0;
+    // }
+
     char* target = found->target_dir;
     
     FILE *fp = fopen(MANAGER_LOG_PATH, "a");
@@ -181,10 +192,10 @@ int manager_sync(char* source, hashTable* table,int inotify_fd) {
             execvp(args[0], args);
             // If exec fails
             perror("Error execvp Failed.");
+            exit(1);
         } else if (pid > 0) {
             // Parent process
             active_workers++;   // Increase worker count.
-           
             printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Syncing directory: %s -> %s\n",
                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
                 source, target);
@@ -193,20 +204,62 @@ int manager_sync(char* source, hashTable* table,int inotify_fd) {
             found->last_sync_time = time(NULL);
             found->watchdesc = inotify_add_watch(inotify_fd, source, IN_CREATE | IN_MODIFY | IN_DELETE);
 
+            // NOT IMPLEMENTED
             // THIS HAS TO BE MOVED ONCE THE WORKER FINISHES HIS JOB.
-            // ASLO HAVE TO ADD A SYNCING VAR FOR EVERY DIRECTORY TO CHECK IF IT IS CURRENTLY SYNCING.
             // printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Sync completed: %s -> %s Errors: %d\n", 
             //     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
             //     source,target, found->error_count);
 
         } else {
             perror("Error fork Failed.");
+            exit(1);
         }
     } else { // If active workers > 5
         // Add to queue.
         node* job = init_node(source, target, "ALL", "FULL");
-        printf("JOB [%s -> %s] QUEUED\n", source, target);
         enqueue(q, job);
     }
+    return 0;
+}
+
+
+int manager_shutdown(hashTable* table, int inotify_fd) {
+    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+        watchDir* curr = table->buckets[i];
+        while (curr != NULL) {
+            if (curr->active == 1 && curr->watchdesc >= 0) {
+                inotify_rm_watch(inotify_fd, curr->watchdesc);
+                curr->active = 0;
+            }
+            curr = curr->next;
+        }
+    }
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    printf("[%d-%02d-%02d %02d:%02d:%02d] Shutting down manager...\n",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    printf("[%d-%02d-%02d %02d:%02d:%02d] Waiting for all active workers to finish.\n",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    printf("[%d-%02d-%02d %02d:%02d:%02d] Processing remaining queued tasks.\n",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    while (active_workers > 0) {
+        pause();
+    }
+
+    t = time(NULL);
+    tm = *localtime(&t);
+
+    printf("[%d-%02d-%02d %02d:%02d:%02d] Manager shutdown complete.\n",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
+
     return 0;
 }

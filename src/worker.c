@@ -6,13 +6,14 @@
 #include <dirent.h>
 #include <string.h>
 
+
 int copy_file(char* path_from, char* path_to ){
     
     // Opens Source Directory.
     DIR* source = opendir(path_from);
     if (source == NULL) // If Null return 1.
         return 1;
-    
+
     // Initialie a dirent.
     struct dirent* source_entity;
     source_entity = readdir(source); // Read the Source Directory.
@@ -64,7 +65,6 @@ int main(int argc, char* argv[]){
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
         sleep(2);
         copy_file(argv[1], argv[2]);   // FULL SYNC
-        printf("WORKER FOR %s -> %s DONE\n", argv[1], argv[2]);
     }
 
 

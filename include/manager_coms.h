@@ -12,4 +12,6 @@ int manager_status(char* source, hashTable* table);
 
 int manager_sync(char* source, hashTable* table,int inotify_fd);
 
+int manager_shutdown(hashTable* table, int inotify_fd);
+
 #endif
