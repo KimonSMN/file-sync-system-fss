@@ -100,6 +100,11 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    int fss_out = open("./fss_out", O_RDONLY | O_NONBLOCK);
+    if (fss_out == -1) {
+        return 1;
+    }
+
     // Initialize hash table.
     table = init_hash_table();
 
@@ -157,7 +162,7 @@ int main(int argc, char* argv[]){
 
             } else { // If active workers > 5
                 // Add to queue.
-                node* job = init_node(source_dir, target_dir, "ALL", "FULL");
+                node* job = init_node(curr->source_dir, curr->target_dir, "ALL", "FULL");
                 enqueue(q, job);
             }
         }
@@ -211,7 +216,7 @@ int main(int argc, char* argv[]){
         
                     } else { // If active workers > 5
                         // Add to queue.
-                        node* job = init_node(source_dir, target_dir, event->name, opt);
+                        node* job = init_node(found->source_dir, found->target_dir, event->name, opt);
                         enqueue(q, job);
                     }
                 }

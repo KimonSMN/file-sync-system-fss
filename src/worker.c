@@ -144,22 +144,22 @@ int main(int argc, char* argv[]){
     // FULL, ADDED, MODIFIED, DELETED
 
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
-        sleep(2);
+        sleep(1);
         copy_file(argv[1], argv[2]);   // FULL SYNC
     }
 
     if(strcmp(argv[4], "ADDED") == 0){
-        sleep(2);
+        sleep(1);
         add_file(argv[1], argv[2], argv[3]);
     }
 
     if(strcmp(argv[4], "MODIFIED") == 0){
-        sleep(2);
+        sleep(1);
         modify_file(argv[1], argv[2], argv[3]);
     }
 
     if(strcmp(argv[4], "DELETED") == 0){
-        sleep(2);
+        sleep(1);
         delete_file(argv[1], argv[2], argv[3]);
     }
 
