@@ -10,6 +10,19 @@
 
 int main(int argc, char* argv[]){
 
+    char* console_log = NULL;
+
+    // Flags
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-l") == 0) {
+            console_log = argv[++i];
+        }
+    }
+    if (console_log == NULL) {
+        printf("Usage: ./fss_console -l <console-logfile>\n");
+        exit(1);
+    }
+
     int fd = open("./fss_in", O_WRONLY);
     if(fd == -1){
         return 1;
@@ -17,7 +30,6 @@ int main(int argc, char* argv[]){
     char buffer[128];
 
     int active = 1;
-
 
     while (active) {
         printf("\n$ ");
