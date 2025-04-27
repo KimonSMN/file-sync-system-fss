@@ -51,10 +51,23 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 
 int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* event_name, char* operation){
 
+    // Open a new pipe for each worker
+    // int fd[2]; // fd[0] - read | fd[1] - write
+    // if (pipe(fd) == -1) {
+    //     exit(1);
+    // }
+
     pid_t pid = fork(); 
         
     if (pid == 0) {
         // Child process
+
+        // close(fd[0]);   // Child doesn't read.
+        // dup2(fd[1], STDOUT_FILENO);  // write end
+        // close(fd[1]);
+
+        // race condition here , should be fixed
+
         char *args[] = {WORKER_PATH, source, target, event_name, operation, NULL};
         execvp(args[0], args);
 
@@ -63,8 +76,9 @@ int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* e
     } else if (pid > 0) {
         // Parent process
 
+        // close(fd[1]); // Parent doesn't write.
+        
         active_workers++;   // Increase worker count.
-
         if (manager_file_pointer != NULL) {
             time_t t = time(NULL);
             struct tm tm = *localtime(&t);
