@@ -16,15 +16,19 @@
 
 
 int manager_add(char* source, char* target, int inotify_fd, hashTable* table, queue* q){
+    
+    struct tm tm = get_time(); 
+    
     watchDir* found = find_watchDir(table,source);  // Try to find source directory.
     if (found != NULL) {
         if (strcmp(found->target_dir, target) != 0) {   // If the found->target_dir (original) isn't the same as the one passed, return 1 since we want one to one pair.
-            printf("%s is already has a pair \n", source);
+            printf("[%d-%02d-%02d %02d:%02d:%02d] Already in queue: %s\n",                      // Print the message.
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                source);
             return 1;
         }
     }
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);  
+ 
 
     if (found != NULL && strcmp(found->source_dir, source) == 0 && strcmp(found->target_dir, target) == 0) {    // If source directory already exists.
         printf("[%d-%02d-%02d %02d:%02d:%02d] Already in queue: %s\n",                      // Print the message.

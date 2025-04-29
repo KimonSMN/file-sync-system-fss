@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){
     // FULL, ADDED, MODIFIED, DELETED
 
     char report_buff[4096] = {0};
-
+    
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
         copy_file(argv[1], argv[2], report_buff);   // FULL SYNC
     }
@@ -182,6 +182,7 @@ int main(int argc, char* argv[]){
     if(strcmp(argv[4], "DELETED") == 0){
         delete_file(argv[1], argv[2], argv[3], report_buff);
     }
+
 
     // write(STDOUT_FILENO, report_buff, strlen(report_buff));
 

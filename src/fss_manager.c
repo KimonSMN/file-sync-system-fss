@@ -23,6 +23,8 @@
 #include "manager_coms.h"
 
 #include "globals.h"
+#include <bits/types/sigset_t.h>
+#include <bits/sigaction.h>
 
 
 void handler(){ // SIGCHLD
@@ -66,7 +68,6 @@ void handler(){ // SIGCHLD
         }
     }
 }
-
 
 int main(int argc, char* argv[]){
 
@@ -114,6 +115,11 @@ int main(int argc, char* argv[]){
     // Initialize Queue.
     q = init_queue();
 
+    sigset_t block_mask;
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &block_mask, NULL);
+    
     // Read config file
     FILE *fp = fopen(config_path, "r");
     if (!fp) {
@@ -132,7 +138,7 @@ int main(int argc, char* argv[]){
 
     char line[1024], source_dir[512], target_dir[512];
     
-    while(fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp)) {
         line[strcspn(line, "\n")] = 0;
 
         char *token = strtok(line, " ");
@@ -184,6 +190,7 @@ int main(int argc, char* argv[]){
     fds[1].fd = fss_in;
     fds[1].events = POLLIN;
 
+    sigprocmask(SIG_UNBLOCK, &block_mask, NULL);
 
     while (1) { 
         poll(fds, 2, -1);

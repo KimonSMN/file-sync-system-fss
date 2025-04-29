@@ -23,6 +23,7 @@
         "globals.h": "c",
         "poll.h": "c",
         "wait.h": "c",
-        "errno.h": "c"
+        "errno.h": "c",
+        "sigset_t.h": "c"
     }
 }
