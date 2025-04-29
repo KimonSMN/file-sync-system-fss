@@ -1,14 +1,34 @@
 #ifndef UTILITY
 #define UTILITY
 
-#define MAX_WORKERS 5  // MAX IS 5.
-#define MANAGER_LOG_PATH "./logs/manager-log"
-#define CONSOLE_LOG_PATH "./logs/console-log"
-#define CONFIG_PATH "./config.txt"
-#define WORKER_PATH "./build/worker"
+#include <stdio.h>
+#include <time.h>
+
+// MACROS
+#define PATH_SIZE 64
+#define MAX_WORKERS 5
+#define WORKER_PATH "build/worker"
+#define FIFO_IN "fss_in"
+#define FIFO_OUT "fss_out"
+
+// Paths have defaults, but will be changed once fss_manager & fss_console by calling set_path() functions.
+extern char manager_log_path[PATH_SIZE];
+extern char console_log_path[PATH_SIZE];
+extern char config_path[PATH_SIZE];
+
+// Function Declerations.
 
 /* Create a new FIFO (with error check). */
-int create_named_pipe(char *name);
+int create_named_pipe(const char *name);
+
+/* Delete the given FIFO with error check).*/
+int delete_named_pipe(const char *name);
+
+/* Function to set the paths correctly, for use in multiple files. */
+void set_path_manager(const char* manager_log, const char* config);
+
+/* Function to set the paths correctly, for use in multiple files. */
+void set_path_console(const char* console_log);
 
 /* Write formatted output to stream & to stdout. */
 void printf_fprintf(FILE* stream, char* format, ...);
@@ -22,6 +42,7 @@ int check_dir(const char *path);
    Set manager_file_pointer to NULL in order not to print a message.*/
 int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* event_name, char* operation);
 
+/* Return the current time. */
 struct tm get_time();
 
 #endif

@@ -53,7 +53,7 @@ void handler(){ // SIGCHLD
                                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, job->source_dir);
                 
                 write(STDOUT_FILENO,buffer, strlen(buffer));
-                int manager_fd = open(MANAGER_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0777);
+                int manager_fd = open(manager_log_path, O_WRONLY | O_CREAT | O_APPEND, 0777);
                 write(manager_fd, buffer, strlen(buffer)) ;
 
                 found = find_watchDir(table, job->source_dir);
@@ -72,7 +72,8 @@ int main(int argc, char* argv[]){
 
     signal(SIGCHLD, handler); //volatile sig_atomic_t maybe need to use this here?
 
-    char* manager_log, *config_file;
+    char* manager_log = NULL;
+    char* config_file = NULL;
     active_workers = 0;
 
     // Flags
@@ -91,16 +92,18 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    // Create necessary named-pipes
-    create_named_pipe("fss_in");
-    create_named_pipe("fss_out");
+    set_path_manager(manager_log, config_file);
 
-    int fss_in = open("./fss_in", O_RDONLY | O_NONBLOCK);
+    // Create necessary named-pipes
+    create_named_pipe(FIFO_IN);
+    create_named_pipe(FIFO_OUT);
+
+    int fss_in = open(FIFO_IN, O_RDONLY | O_NONBLOCK);
     if (fss_in == -1) {
         return 1;
     }
 
-    int fss_out = open("./fss_out", O_RDONLY | O_NONBLOCK);
+    int fss_out = open(FIFO_OUT, O_RDONLY | O_NONBLOCK);
     if (fss_out == -1) {
         return 1;
     }
@@ -112,13 +115,13 @@ int main(int argc, char* argv[]){
     q = init_queue();
 
     // Read config file
-    FILE *fp = fopen(CONFIG_PATH, "r");
+    FILE *fp = fopen(config_path, "r");
     if (!fp) {
         perror("Error opening file.");
         return 1;
     }
 
-    FILE *mlfp = fopen(MANAGER_LOG_PATH, "w");
+    FILE *mlfp = fopen(manager_log_path, "w");
     if (!mlfp) {
         perror("Error opening file.");
         return 1;
@@ -190,7 +193,6 @@ int main(int argc, char* argv[]){
 
             for (char* p = buffer; p < buffer + numRead;){
                 struct inotify_event* event = (struct inotify_event *) p;
-                // Μετέπειτα αλλαγές στο συγχρονίζονται σε πραγµατικό χρόνο !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOT IMPLEMENTED
                 if (event->len > 0) {
                     watchDir* found = find_watchDir_wd(table, event->wd);
                     if (found == NULL) {
@@ -245,17 +247,20 @@ int main(int argc, char* argv[]){
                     break;
                 }
 
-                // handle the command recieved.
             } else if (r == 0) {
                 close(fss_in);
-                fss_in = open("./fss_in", O_RDONLY | O_NONBLOCK);
+                fss_in = open(FIFO_IN, O_RDONLY | O_NONBLOCK);
                 fds[1].fd = fss_in;
             }
         }
       
     }
 
+    // Free memory
+
     destroy_hash_table(table);
+    delete_named_pipe(FIFO_IN);
+    delete_named_pipe(FIFO_OUT);
 
     return 0;
 }

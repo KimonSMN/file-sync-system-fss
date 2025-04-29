@@ -1,32 +1,54 @@
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
-#include <sys/inotify.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdarg.h>
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#include <errno.h>
-#include <fcntl.h>
-#include <time.h>
-#include <stdarg.h>
-#include <limits.h>
 #include <signal.h>
 
 #include "globals.h"
 #include "utility.h"
 
-int create_named_pipe(char *name){
+char manager_log_path[PATH_SIZE] = "./logs/manager-log";
+char console_log_path[PATH_SIZE] = "./logs/console-log";
+char config_path[PATH_SIZE] = "./config.txt";
+
+int create_named_pipe(const char *name){
     if(mkfifo(name, 0777) == -1){
         if (errno != EEXIST){
-            printf("Could not create fifo file\n");
+            printf("Could not create fifo\n");
             return 1;
         }
     }
     return 0;
 }
+int delete_named_pipe(const char *name){
+    if(unlink(name) == -1){
+        printf("Could not delete fifo\n");
+        return 1;
+    }
+    return 0;
+}
+
+void set_path_manager(const char* manager_log, const char* config){
+    if (manager_log != NULL && config != NULL) {
+        strncpy(manager_log_path, manager_log, PATH_SIZE);
+        strncpy(config_path, config, PATH_SIZE);
+    }
+}
+
+void set_path_console(const char* console_log){
+    if (console_log != NULL) {
+        strncpy(console_log_path,console_log, PATH_SIZE);
+    }
+}
+
 
 void printf_fprintf(FILE* stream, char* format, ...){
     va_list ap;

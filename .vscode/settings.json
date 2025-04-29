@@ -22,6 +22,7 @@
         "globals_h": "c",
         "globals.h": "c",
         "poll.h": "c",
-        "wait.h": "c"
+        "wait.h": "c",
+        "errno.h": "c"
     }
 }

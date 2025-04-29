@@ -183,7 +183,7 @@ int main(int argc, char* argv[]){
         delete_file(argv[1], argv[2], argv[3], report_buff);
     }
 
-    write(STDOUT_FILENO, report_buff, strlen(report_buff));
+    // write(STDOUT_FILENO, report_buff, strlen(report_buff));
 
     return 0;
 }

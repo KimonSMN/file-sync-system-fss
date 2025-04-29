@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 typedef struct node{
-    char* source_dir;       // Source directory Path.
-    char* target_dir;       // Target directory Path.
+    char* source_dir;
+    char* target_dir;
     char* filename;
     char* operation;
     struct node* next;
@@ -14,10 +14,8 @@ typedef struct node{
 
 
 typedef struct queue{
-    
     node* head;
     node* tail;
-
 } queue;
 
 

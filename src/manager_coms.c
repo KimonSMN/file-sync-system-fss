@@ -14,7 +14,6 @@
 #include "queue.h"
 #include "globals.h"
 
-/*                           Εντολές που µπορεί να δεχθεί ο fss_manager                         */
 
 int manager_add(char* source, char* target, int inotify_fd, hashTable* table, queue* q){
     watchDir* found = find_watchDir(table,source);  // Try to find source directory.
@@ -40,6 +39,8 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
         found->watchdesc = inotify_add_watch(inotify_fd, source, IN_CREATE | IN_MODIFY | IN_DELETE);
         if (found->watchdesc == -1) {
             perror("Error adding inotify_watch.");
+            remove_watchDir(table, found->source_dir);
+            return 1;
         } else {
             found->active = 1;
         }
@@ -47,7 +48,7 @@ int manager_add(char* source, char* target, int inotify_fd, hashTable* table, qu
     } 
     
     // If the source directory was NULL and we created it.
-    FILE *fp = fopen(MANAGER_LOG_PATH, "a");    // Open the manager-log-file.
+    FILE *fp = fopen(manager_log_path, "a");    // Open the manager-log-file.
     if (!fp) {
         perror("Error opening File.");
         return 1;
@@ -81,7 +82,7 @@ int manager_cancel(char* source, int inotify_fd, hashTable* table){
     }
     if(inotify_rm_watch(inotify_fd, found->watchdesc) == 0) {   // Success returns zero.
         
-        FILE *fp = fopen(MANAGER_LOG_PATH, "a");    // Open the manager-log-file.
+        FILE *fp = fopen(manager_log_path, "a");    // Open the manager-log-file.
         if (!fp) {
             perror("Error opening File.");
             return 1;
@@ -153,7 +154,7 @@ int manager_sync(char* source, hashTable* table,int inotify_fd) {
 
     char* target = found->target_dir;
     
-    FILE *fp = fopen(MANAGER_LOG_PATH, "a");
+    FILE *fp = fopen(manager_log_path, "a");
     if (!fp) {
         perror("Error opening file.");
         return 1;

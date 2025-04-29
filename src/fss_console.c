@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <time.h>
+
+#include "utility.h"
 
 int main(int argc, char* argv[]){
 
@@ -23,10 +26,15 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    int fd = open("./fss_in", O_WRONLY);
+    set_path_console(console_log);
+
+    int fd = open(FIFO_IN, O_WRONLY);
     if(fd == -1){
         return 1;
     }
+
+    // FILE* console_log_fd = fopen(console_log, "a");
+
     char buffer[128];
 
     int active = 1;
@@ -43,10 +51,17 @@ int main(int argc, char* argv[]){
         char* command = strtok(tmp, " ");
         char* source = strtok(NULL, " ");
         char* target = strtok(NULL, " ");
+        
+        // struct tm tm = get_time();
 
         if (strcmp(command, "add") == 0) {
-            if(source && target) 
+            if(source && target) {
                 write(fd, buffer, strlen(buffer) + 1);
+                // fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command add %s -> %s.\n",
+                //     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                //     tm.tm_hour, tm.tm_min, tm.tm_sec,
+                //     source, target);
+            }
             else
                 printf("Usage: add <source> <target>");
         } else if (strcmp(command, "cancel") == 0) {
@@ -72,10 +87,9 @@ int main(int argc, char* argv[]){
         } else {
             perror("Unrecognized command");
         }
-
     }
-
+    
     close(fd);
-
+    // fclose(console_log_fd);
     return 0;
 }
