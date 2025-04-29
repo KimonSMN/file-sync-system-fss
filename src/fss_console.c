@@ -33,7 +33,7 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    // FILE* console_log_fd = fopen(console_log, "a");
+    FILE* console_log_fd = fopen(console_log, "w");
 
     char buffer[128];
 
@@ -52,36 +52,55 @@ int main(int argc, char* argv[]){
         char* source = strtok(NULL, " ");
         char* target = strtok(NULL, " ");
         
-        // struct tm tm = get_time();
+        struct tm tm = get_time();
 
         if (strcmp(command, "add") == 0) {
             if(source && target) {
                 write(fd, buffer, strlen(buffer) + 1);
-                // fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command add %s -> %s.\n",
-                //     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                //     tm.tm_hour, tm.tm_min, tm.tm_sec,
-                //     source, target);
+                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command add %s -> %s.\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source, target);
             }
             else
                 printf("Usage: add <source> <target>");
         } else if (strcmp(command, "cancel") == 0) {
-            if(source && !target) 
+            if(source && !target) {
                 write(fd, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command cancel %s.\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source);
+            }
             else
                 printf("Usage: cancel <source dir>");
         } else if (strcmp(command, "status") == 0) {
-            if(source && !target) 
+            if(source && !target) {
                 write(fd, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command status %s.\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source);
+            }
             else
                 printf("Usage: status <source dir>");
         } else if (strcmp(command, "sync") == 0) {
-            if(source && !target) 
+            if(source && !target) {
                 write(fd, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command sync %s.\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source);
+            }
             else    
                 printf("Usage: sync <source dir>");
         } else if (strcmp(command, "shutdown") == 0) {
             if(!source) {
                 write(fd, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command shutdown %s.\n",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                    tm.tm_hour, tm.tm_min, tm.tm_sec,
+                    source);
                 active = 0;
             }
         } else {
