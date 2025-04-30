@@ -1,6 +1,1 @@
-[2025-04-30 17:29:20] Command cancel test/source1.
-[2025-04-30 17:29:23] Command cancel test/source2.
-[2025-04-30 17:29:30] Command cancel test/source3.
-[2025-04-30 17:29:39] Command cancel test/source4.
-[2025-04-30 17:29:43] Command sync test/source4.
-[2025-04-30 17:30:01] Command shutdown (null).
+[2025-04-30 18:34:46] Command shutdown (null).

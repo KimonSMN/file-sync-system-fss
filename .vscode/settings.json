@@ -24,6 +24,7 @@
         "poll.h": "c",
         "wait.h": "c",
         "errno.h": "c",
-        "sigset_t.h": "c"
+        "sigset_t.h": "c",
+        "new": "c"
     }
 }

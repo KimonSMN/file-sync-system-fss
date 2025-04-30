@@ -10,6 +10,7 @@
 #define WORKER_PATH "build/worker"
 #define FIFO_IN "fss_in"
 #define FIFO_OUT "fss_out"
+#define BUFFER_SIZE 4096
 
 // Paths have defaults, but will be changed once fss_manager & fss_console by calling set_path() functions.
 extern char manager_log_path[PATH_SIZE];
@@ -32,6 +33,8 @@ void set_path_console(const char* console_log);
 
 /* Write formatted output to stream & to stdout. */
 void printf_fprintf(FILE* stream, char* format, ...);
+
+void print_to_buffer(char* sync_report,struct tm tm, char* source, char* target, int worker_pid, char* operation, char* result, char* details);
 
 /* If return is 1, path doesn't exist.  
    If return is 0, path exists.  */

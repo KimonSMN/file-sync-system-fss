@@ -6,7 +6,8 @@
 #include <dirent.h>
 #include <string.h>
 
-#define BUFFER_SIZE 4096
+#include "utility.h"
+
 
 int copy_file(char* path_from, char* path_to, char* report_buff){
     
@@ -155,7 +156,7 @@ int delete_file(char* source, char* target, char* filename, char* report_buff) {
     strcat(path2, filename);
 
     if (unlink(path2) != 0) {
-        snprintf(report_buff, BUFFER_SIZE, "File %s: %s\n", path2, strerror(errno));
+        snprintf(report_buff, BUFFER_SIZE,"File %s: %s\n", path2, strerror(errno));
         return 1;
     }
     return 0;
@@ -166,25 +167,38 @@ int main(int argc, char* argv[]){
     // FULL, ADDED, MODIFIED, DELETED
 
     char report_buff[4096] = {0};
-    
+    struct tm tm = get_time();
+    char* sync_report = malloc(BUFFER_SIZE); 
+
     if(strcmp(argv[3], "ALL") == 0 && strcmp(argv[4], "FULL") == 0){
         copy_file(argv[1], argv[2], report_buff);   // FULL SYNC
+        print_to_buffer(sync_report, tm,argv[1],argv[2],getpid(),argv[4],NULL,NULL);
+
     }
 
     if(strcmp(argv[4], "ADDED") == 0){
         add_file(argv[1], argv[2], argv[3], report_buff);
+        print_to_buffer(sync_report, tm,argv[1],argv[2],getpid(),argv[4],NULL,NULL);
+
     }
 
     if(strcmp(argv[4], "MODIFIED") == 0){
         modify_file(argv[1], argv[2], argv[3], report_buff);
+        print_to_buffer(sync_report, tm,argv[1],argv[2],getpid(),argv[4],NULL,NULL);
+
     }
 
     if(strcmp(argv[4], "DELETED") == 0){
         delete_file(argv[1], argv[2], argv[3], report_buff);
+        print_to_buffer(sync_report, tm,argv[1],argv[2],getpid(),argv[4],NULL,NULL);
+
     }
 
-
+    // snprintf(report_buff, sizeof(report_buff), "Hello from worker!\n");
     // write(STDOUT_FILENO, report_buff, strlen(report_buff));
+    write(STDOUT_FILENO, sync_report, strlen(sync_report));
+
+    free(sync_report);
 
     return 0;
 }
