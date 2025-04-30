@@ -94,7 +94,7 @@ int manager_cancel(char* source, int inotify_fd, hashTable* table){
 
         found->active = 0; // set to not watch it.
         
-        printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring stopped for: %s\n",
+        printf_fprintf(fp,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring stopped for %s\n",
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
             source);
     
