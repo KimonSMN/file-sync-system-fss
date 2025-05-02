@@ -62,15 +62,10 @@ void printf_fprintf(FILE* stream, char* format, ...){
 }
 
 void print_to_buffer(char* buffer, struct tm tm, char* source, char* target, int worker_pid, char* operation, char* result, char* details){
-    snprintf(buffer, BUFFER_SIZE,
-        "[%d-%02d-%02d %02d:%02d:%02d] [%s] [%s] [%d] [%s] [%s] [%s]\n",
-        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-        tm.tm_hour, tm.tm_min, tm.tm_sec,
-        source,target,worker_pid,operation,result,details);
+    snprintf(buffer, BUFFER_SIZE, "[%s] [%s] [%s] [%d] [%s] [%s] [%s]\n", get_time(), source,target,worker_pid,operation,result,details);
 }
 
-
-int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EXIT IF THERE IS A NON EXISTENT DIR
+int check_dir(const char *path) {
     struct stat st;
     if(stat(path, &st) != 0) 
         return 1;
@@ -80,23 +75,22 @@ int check_dir(const char *path) {   // MAY HAVE TO CHANGE THIS, IF WE WANT TO EX
 
 
 int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* event_name, char* operation){
-
+    // Not implemented, disables parallelism.
     // Open a new pipe for each worker
-    int fd[2]; // fd[0] - read | fd[1] - write
-    if (pipe(fd) == -1) {
-        exit(1);
-    }
+    // int fd[2]; // fd[0] - read | fd[1] - write
+    // if (pipe(fd) == -1) {
+    //     exit(1);
+    // }
 
     pid_t pid = fork(); 
         
     if (pid == 0) {
         // Child process
 
-        close(fd[0]);   // Child doesn't read.
-        dup2(fd[1], STDOUT_FILENO);  // write end
-        close(fd[1]);
-
-        // race condition here , should be fixed
+        // Not implemented, disables parallelism.
+        // close(fd[0]);   // Child doesn't read.
+        // dup2(fd[1], STDOUT_FILENO);  // write end
+        // close(fd[1]);
 
         char *args[] = {WORKER_PATH, source, target, event_name, operation, NULL};
         execvp(args[0], args);
@@ -106,37 +100,32 @@ int spawn_worker(char* source, char* target, FILE* manager_file_pointer, char* e
     } else if (pid > 0) {
         // Parent process
 
-        close(fd[1]); // Parent doesn't write.
-        char buffer[4096];
-        ssize_t bytes_read = read(fd[0], buffer, sizeof(buffer) - 1);
-        buffer[bytes_read] = '\0';
-        fprintf(manager_file_pointer, "%s", buffer); 
-      
-        close(fd[0]);
-            
+        // Not implemented, disables parallelism.
+        // close(fd[1]); // Parent doesn't write.
+        // char buffer[4096];
+        // ssize_t bytes_read = read(fd[0], buffer, sizeof(buffer) - 1);
+        // buffer[bytes_read] = '\0';
+        // fprintf(manager_file_pointer, "%s", buffer); 
+        // close(fd[0]);
 
         active_workers++;   // Increase worker count.
-        if (manager_file_pointer != NULL) {
-            time_t t = time(NULL);
-            struct tm tm = *localtime(&t);
-            
-            printf_fprintf(manager_file_pointer,"[%d-%02d-%02d %02d:%02d:%02d] Added directory: %s -> %s\n",
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                source, target);
-            printf_fprintf(manager_file_pointer,"[%d-%02d-%02d %02d:%02d:%02d] Monitoring started for %s\n", 
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-                source);
+
+        if (manager_file_pointer != NULL) {            
+            printf_fprintf(manager_file_pointer,"[%s] Added directory: %s -> %s\n", get_time(), source, target);    // Log to terminal & to manager-log.
+            printf_fprintf(manager_file_pointer,"[%s] Monitoring started for %s\n", get_time(), source);            // Log to terminal & to manager-log.
         }
  
     } else {
         perror("Error fork Failed.");
-        exit(1);
+        return 1;
     }
     return 0;
 }
 
-struct tm get_time(){
+char* get_time(){
+    static char current_time[32];
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    return tm;
+    strftime(current_time, sizeof(current_time), "%Y-%m-%d %H:%M:%S", &tm);
+    return current_time;
 }

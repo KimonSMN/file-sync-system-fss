@@ -65,12 +65,3 @@ int isEmpty(queue* q){
     return 0;
 }
 
-int sizeOfQueue(queue* q){
-    int size = 0;
-    node* curr = q->head;
-    while(curr != NULL){
-        size++;
-        curr = curr->next;
-    } 
-    return size;
-}

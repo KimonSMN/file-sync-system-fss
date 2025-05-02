@@ -28,8 +28,12 @@ int main(int argc, char* argv[]){
 
     set_path_console(console_log);
 
-    int fd = open(FIFO_IN, O_WRONLY);
-    if(fd == -1){
+    int fss_in = open(FIFO_IN, O_WRONLY);
+    if(fss_in == -1){
+        return 1;
+    }
+    int fss_out = open(FIFO_OUT, O_RDONLY);
+    if(fss_out == -1){
         return 1;
     }
 
@@ -52,63 +56,95 @@ int main(int argc, char* argv[]){
         char* source = strtok(NULL, " ");
         char* target = strtok(NULL, " ");
         
-        struct tm tm = get_time();
-
         if (strcmp(command, "add") == 0) {
             if(source && target) {
-                write(fd, buffer, strlen(buffer) + 1);
-                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command add %s -> %s.\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source, target);
+                write(fss_in, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%s] Command add %s -> %s.\n", get_time(), source, target);
+                ssize_t bytes_read = read(fss_out, buffer, sizeof(buffer) - 1);
+                if (bytes_read > 0) {
+                    buffer[bytes_read] = '\0';
+                    printf("%s", buffer);
+                    fflush(stdout);
+                    fprintf(console_log_fd, "%s", buffer);
+                    fflush(console_log_fd);
+
+                }
             }
             else
                 printf("Usage: add <source> <target>");
         } else if (strcmp(command, "cancel") == 0) {
             if(source && !target) {
-                write(fd, buffer, strlen(buffer) + 1);
-                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command cancel %s.\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source);
+                write(fss_in, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%s] Command cancel %s.\n", get_time(), source);
+                ssize_t bytes_read = read(fss_out, buffer, sizeof(buffer) - 1);
+                if (bytes_read > 0) {
+                    buffer[bytes_read] = '\0';
+
+                    printf("%s", buffer);
+                    fflush(stdout);
+                    fprintf(console_log_fd, "%s", buffer);
+                    fflush(console_log_fd);
+
+                }
             }
             else
                 printf("Usage: cancel <source dir>");
         } else if (strcmp(command, "status") == 0) {
             if(source && !target) {
-                write(fd, buffer, strlen(buffer) + 1);
-                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command status %s.\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source);
+                write(fss_in, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%s] Command status %s.\n", get_time(), source);
+                ssize_t bytes_read = read(fss_out, buffer, sizeof(buffer) - 1);
+                if (bytes_read > 0) {
+                    buffer[bytes_read] = '\0';
+
+                    printf("%s", buffer);
+                    fflush(stdout);
+                    fprintf(console_log_fd, "%s", buffer);
+                    fflush(console_log_fd);
+
+                }
             }
             else
                 printf("Usage: status <source dir>");
         } else if (strcmp(command, "sync") == 0) {
             if(source && !target) {
-                write(fd, buffer, strlen(buffer) + 1);
-                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command sync %s.\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source);
+                write(fss_in, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%s] Command sync %s.\n", get_time(), source);
+                ssize_t bytes_read = read(fss_out, buffer, sizeof(buffer) - 1);
+                if (bytes_read > 0) {
+                    buffer[bytes_read] = '\0';
+                    printf("%s", buffer);
+                    fflush(stdout);
+                    fprintf(console_log_fd, "%s", buffer);
+                    fflush(console_log_fd);
+
+                }
             }
             else    
                 printf("Usage: sync <source dir>");
         } else if (strcmp(command, "shutdown") == 0) {
             if(!source) {
-                write(fd, buffer, strlen(buffer) + 1);
-                fprintf(console_log_fd, "[%d-%02d-%02d %02d:%02d:%02d] Command shutdown %s.\n",
-                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                    tm.tm_hour, tm.tm_min, tm.tm_sec,
-                    source);
+                write(fss_in, buffer, strlen(buffer) + 1);
+                fprintf(console_log_fd, "[%s] Command shutdown.\n", get_time());
+                ssize_t bytes_read;
+                while ((bytes_read = read(fss_out, buffer, sizeof(buffer) - 1)) > 0) {
+                    buffer[bytes_read] = '\0';
+                    printf("%s", buffer);
+                    fflush(stdout);
+                    fprintf(console_log_fd, "%s", buffer);
+                    fflush(console_log_fd);
+                }
                 active = 0;
+                
             }
         } else {
             perror("Unrecognized command");
         }
     }
     
-    close(fd);
+    close(fss_in);
+    close(fss_out);
+
     // fclose(console_log_fd);
     return 0;
 }
